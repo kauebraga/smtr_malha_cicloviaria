@@ -9,7 +9,7 @@ sf::sf_use_s2(FALSE)
 # open ttmatrix
 ttm1_detailed <- readr::read_rds("data/ttmatrix_detailed_rio_bike.rds")
 # open OD
-od_bike <- fread("data-raw/bike_trips/trips_BikeRio_20210901.csv")
+od_bike <- fread("../../data-raw/smtr_malha_cicloviaria/bike_trips/trips_BikeRio_20210901.csv")
 
 
 ttm1_detailed <- ttm1_detailed %>% select(initial_station_name = fromId, final_station_name = toId, ttime_r5r = total_duration,
@@ -44,7 +44,7 @@ od_bike_group_sf_n <- od_bike_group_sf %>%
 
 # fazer intersecao da rotas OD com os trechos do OSM ----------------------
 
-osm_rio_vias <- readr::read_rds("data/osm_rio.rds") %>% select(osm_id, name, highway)
+osm_rio_vias <- readr::read_rds("../../data/smtr_malha_cicloviaria/osm_rio.rds") %>% select(osm_id, name, highway)
 osm_rio_vias_buffer <- st_transform(osm_rio_vias, crs = 31983)
 osm_rio_vias_buffer <- st_buffer(osm_rio_vias_buffer, dist = 20)
 osm_rio_vias_buffer <- st_transform(osm_rio_vias_buffer, crs = 4326)

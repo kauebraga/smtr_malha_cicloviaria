@@ -25,7 +25,7 @@ library(osmextract)
 sf::sf_use_s2(FALSE)
 
 # open OD
-od_bike <- fread("data-raw/bike_trips/trips_BikeRio_20210901.csv")
+od_bike <- fread("../../data-raw/smtr_malha_cicloviaria/bike_trips/trips_BikeRio_20210901.csv")
 # extract day
 od_bike[, dia := as.Date(start_time)]
 table(od_bike$dia)
@@ -50,7 +50,7 @@ mapview(origins_dest_unique_sf, legend = FALSE)
 
 
 # setup r5
-r5r_core <- setup_r5(data_path = "r5r/network/rio_atual", verbose = FALSE)
+r5r_core <- setup_r5(data_path = "../curso_r_transportes/r5r/network/rio_atual", verbose = FALSE)
 
 # 3.1) calculate a travel time matrix
 ttm1 <- travel_time_matrix(r5r_core = r5r_core,
@@ -73,7 +73,7 @@ ttm1_detailed <- detailed_itineraries(r5r_core = r5r_core,
                                       max_trip_duration = 120)
 
 # save
-readr::write_rds(ttm1_detailed, "data/ttmatrix_detailed_rio_bike.rds")
+readr::write_rds(ttm1_detailed, "../../data/smtr_malha_cicloviaria/ttmatrix_detailed_rio_bike.rds")
 
 
 # for output

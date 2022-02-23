@@ -20,6 +20,6 @@ osm_rio_vias <- osm_rio_go %>%
   filter(!is.na(highway))
 # mapview(osm_recife_vias) + shape_rec
 
-readr::write_rds(osm_rio_vias, "data/osm_rio.rds")
+readr::write_rds(osm_rio_vias, "../../data/smtr_malha_cicloviaria/osm_rio.rds")
 
 
