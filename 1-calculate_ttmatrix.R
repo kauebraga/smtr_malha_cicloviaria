@@ -47,17 +47,14 @@ origins_dest_unique[od_bike, on = c("id" = "final_station_name"),
 origins_dest_unique_sf <- origins_dest_unique %>% st_as_sf(coords = c("lon", "lat"), crs = 4326)
 mapview(origins_dest_unique_sf, legend = FALSE)
 
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(data = origins_dest_unique_sf, popup = ~htmltools::htmlEscape(id) )
+
 
 
 # setup r5
 r5r_core <- setup_r5(data_path = "../curso_r_transportes/r5r/network/rio_atual", verbose = FALSE)
-
-# 3.1) calculate a travel time matrix
-ttm1 <- travel_time_matrix(r5r_core = r5r_core,
-                           origins = origins_dest_unique,
-                           destinations = origins_dest_unique,
-                           mode = "BICYCLE",
-                           max_trip_duration = 90)
 
 # routes
 # create coordinates matrix
