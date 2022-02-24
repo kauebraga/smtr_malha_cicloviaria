@@ -40,8 +40,21 @@ agrupar_od_por_rota <- function(od) {
 od_weekday_group <- agrupar_od_por_rota(od_bike_weekday) %>% slice(1:10000)
 od_weekend_group <- agrupar_od_por_rota(od_bike_weekend) %>% slice(1:10000)
 
-st_write(od_weekday_group, "trips_per_route.gpkg")
-st_write(od_weekend_group, "trips_per_route.gpkg")
+fwrite(od_weekday_group %>% st_set_geometry(NULL), "../../data/smtr_malha_cicloviaria/trips_per_route_weekdays.csv")
+st_write(od_weekday_group, "../../data/smtr_malha_cicloviaria/trips_per_route_weekdays.gpkg")
+fwrite(od_weekend_group %>% st_set_geometry(NULL), "../../data/smtr_malha_cicloviaria/trips_per_route_weekend.csv")
+st_write(od_weekend_group, "../../data/smtr_malha_cicloviaria/trips_per_route_weekends.gpkg")
+
+# maps
+
+leaflet() %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addPolylines(data = od_weekday_group[1:100,], color = "red") 
+
+leaflet() %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addPolylines(data = od_weekend_group[1:100,], color = "red") 
+
 
 
 # fazer intersecao da rotas OD com os trechos do OSM ----------------------
