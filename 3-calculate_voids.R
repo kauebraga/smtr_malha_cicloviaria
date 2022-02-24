@@ -31,7 +31,7 @@ agrupar_od_por_rota <- function(od) {
     # deletar origem = destino
     filter(initial_station_name != final_station_name) %>%
     # trazer as rotas!
-    left_join(ttm1_detailed, by = c("initial_station_name", "final_station_name")) %>%
+    left_join(ttmatrix, by = c("initial_station_name", "final_station_name")) %>%
     arrange(desc(trips_n)) %>%
     st_sf()
   
@@ -40,7 +40,8 @@ agrupar_od_por_rota <- function(od) {
 od_weekday_group <- agrupar_od_por_rota(od_bike_weekday) %>% slice(1:10000)
 od_weekend_group <- agrupar_od_por_rota(od_bike_weekend) %>% slice(1:10000)
 
-
+st_write(od_weekday_group, "trips_per_route.gpkg")
+st_write(od_weekend_group, "trips_per_route.gpkg")
 
 
 # fazer intersecao da rotas OD com os trechos do OSM ----------------------
@@ -73,6 +74,9 @@ intersecao_od_osm <- function(od) {
 
 od_weekday_group_vias <- intersecao_od_osm(od_weekday_group)
 od_weekend_group_vias <- intersecao_od_osm(od_weekend_group_vias)
+
+write(od_weekday_group_vias, "osm_trechos_trips_weekday.rds")
+write(od_weekend_group_vias, "osm_trechos_trips_weekend.rds")
 
 
 leaflet() %>%

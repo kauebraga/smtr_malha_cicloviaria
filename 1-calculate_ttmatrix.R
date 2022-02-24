@@ -68,6 +68,12 @@ ttm1_detailed <- detailed_itineraries(r5r_core = r5r_core,
                                       destinations = coords_matrix_dest,
                                       mode = "BICYCLE",
                                       max_trip_duration = 120)
+# ttm1_detailed <- detailed_itineraries(r5r_core = r5r_core,
+#                                       origins = filter(coords_matrix_origin, id == "232 - Parque Madureira I"),
+#                                       destinations = coords_matrix_origin %>% slice(1:309),
+#                                       mode = "BICYCLE",
+#                                       max_trip_duration = 150,
+#                                       max_lts = 4)
 
 # save
 readr::write_rds(ttm1_detailed, "../../data/smtr_malha_cicloviaria/ttmatrix_detailed_rio_bike.rds")

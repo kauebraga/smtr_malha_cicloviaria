@@ -1,0 +1,73 @@
+---
+title: "Relatório *People Near Frequent Transit* - ITDP"
+author: "Kauê Braga"
+date: "`r format(Sys.time(), '%d de %B, %Y')`"
+output:
+  memor::pdf_memo:
+    use_profile: false
+    company:
+      name: Kauê Braga
+      email: kauebraga90@gmail.com
+    short_title: Relatório PNFT
+    confidential: false
+    libertine: true
+    chinese: false
+    logo_height: 1.2cm
+    watermark_color: gray
+    toc: false
+    lot: false
+    lof: false
+    number_sections: true
+    footer_on_first_page: false
+    latex_engine: xelatex
+  rmdformats::html_clean:
+    self_contained: true
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+  pdf_document: 
+    keep_tex: true
+    # includes:
+      # in_header: "template.tex"
+    template: template_memoir.tex
+  html_document:
+    df_print: paged
+    theme: paper
+    toc: true
+    number_sections: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+editor_options:
+  chunk_output_type: console
+use_profile: false
+company: true
+name: Kauê Braga
+email: kauebraga90@gmail.com
+short_title: Relatório PNFT
+confidential: false
+libertine: true
+chinese: false
+logo_height: 1.2cm
+watermark_color: gray
+toc: false
+lot: false
+lof: false
+number_sections: true
+footer_on_first_page: false
+# latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, error = FALSE, message = FALSE, out.width = "100%", fig.pos = "H", out.extra = "")
+library(knitr)
+library(dplyr)
+library(readr)
+library(sf)
+library(kableExtra)
+library(mapview)
+library(leaflet)
+```
+
+
+Esse documento apresenta os resultados do cálculo do indicador *People Near Frequent Transit - ITDP* para as cidades de Belo Horizonte e São Paulo. 

@@ -1,0 +1,237 @@
+\documentclass[11pt,]{article}
+
+\usepackage{lmodern}
+
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+    \usepackage{xltxtra, xunicode}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Mapping=tex-text, Scale=MatchLowercase}
+  \newcommand{\euro}{€}
+\fi
+
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[top=0.5in, bottom=.4in, left = 1in, right=1in, includeheadfoot]{geometry}
+\ifxetex
+  \usepackage[setpagesize=false, % page size defined by xetex
+              unicode=false, % unicode breaks when used with xetex
+              xetex]{hyperref}
+\else
+  \usepackage[unicode=true]{hyperref}
+\fi
+\hypersetup{breaklinks=true,
+            bookmarks=true,
+            pdfauthor={Kauê Braga},
+            pdftitle={Relatório People Near Frequent Transit - ITDP},
+            colorlinks=true,
+            citecolor=blue,
+            urlcolor=blue,
+            linkcolor=magenta,
+            pdfborder={0 0 0}}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{longtable,booktabs}
+% \setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\setcounter{secnumdepth}{5}
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% % Create subtitle command for use in maketitle
+% \newcommand{\subtitle}[1]{
+%   \posttitle{\large}
+% }
+
+% \setlength{\droptitle}{-2em}
+  \title{Relatório \emph{People Near Frequent Transit} - ITDP}
+  % \pretitle{\vspace{\droptitle}\centering\huge}
+  \author{Kauê Braga}
+  % \preauthor{\centering\large\emph}
+  % \postauthor{\par}
+  % \predate{\centering\large\emph}
+  % \postdate{\par}
+  \date{23 de fevereiro, 2022}
+
+%% --------- above is almost identical with default rmarkdown
+%% document formatting
+ % colors for tables and text
+\usepackage{ragged2e} % justifying text
+\usepackage{setspace} % spacing commands, automatically makes captions single-spaced
+  \setstretch{1.2} \frenchspacing
+\usepackage{lastpage} % access number of last page for numbering in margin
+
+%% fonts setup
+\usepackage{libertine}
+\usepackage{gensymb} %degree symbol
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage{makecell}
+\usepackage[hang]{footmisc}
+
+%% tables and figures
+
+% include section number in figure and table numbers, renew in each section
+\usepackage{chngcntr}
+\counterwithin{table}{section}
+\counterwithin{figure}{section}
+
+\robustify\tnote
+
+% table/figure captions (titles and legends)
+
+% \usepackage{caption}
+% % \DeclareCaptionFormat{llap}{\llap{#1#2}#3\par} % table / figure number in left margin
+% \DeclareCaptionLabelSeparator{spc}{\hspace{.075 in}} % space between table number and caption
+% \captionsetup{font={color=blue, sf}, singlelinecheck=off, margin= 15pt, skip=4pt, size=small, labelfont={sc, sf}, format=llap, labelsep=spc,singlelinecheck=no} % same font as headers
+% 
+% table/figure captions (titles and legends)
+\usepackage[singlelinecheck=false]{caption} % left justify table captions
+\captionsetup{font={color=black, sf}, skip=4pt, size=small, labelfont=sf, labelsep = period} % color and spacing between caption and table proper, updated 
+
+\makeatletter
+\let\runtitle\@title
+\makeatother
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\rhead{\footnotesize \nouppercase{\sc Relatório PNFT} \hspace{.025 in} \hspace{.055 in} \thepage \hspace{.01 in} / \pageref*{LastPage}}
+
+   
+      \renewcommand{\footrulewidth}{0.5pt}
+   \cfoot{\footnotesize
+   Kauê Braga \hspace{.025 in} $\cdot$ \hspace{.05 in} kauebraga90@gmail.com
+   }
+   
+\fancypagestyle{firststyle}
+{
+   \fancyhf{}
+      \renewcommand{\footrulewidth}{0.5pt}
+   \cfoot{\footnotesize
+   Kauê Braga \hspace{.025 in} $\cdot$ \hspace{.05 in} kauebraga90@gmail.com
+   }
+   }
+
+\fancypagestyle{nofooter}
+{
+   \fancyfoot{}
+   \renewcommand{\footrulewidth}{0.0pt}
+}
+
+\setlength\parindent{0pt}
+
+\usepackage{titlesec}
+\titleformat*{\section}{\sc \large \color[rgb]{0,0,0}}
+\titleformat*{\subsection}{\large}
+\titleformat*{\subsubsection}{\normalsize}
+\titlespacing\section{0pt}{8pt plus 2pt minus 2pt}{0pt plus 2pt minus 2pt}
+\titlespacing\subsection{0pt}{6pt plus 2pt minus 2pt}{-2pt plus 2pt minus 2pt}
+\titlespacing\subsubsection{0pt}{2pt plus 2pt minus 2pt}{-3pt plus 2pt minus 2pt}
+
+
+% set up title page
+\pretitle{
+\begin{flushleft}\LARGE
+}
+
+\posttitle{
+  \end{flushleft}
+}
+
+\preauthor{\par\begin{flushleft}\large\vskip -.5em}
+\postauthor{\end{flushleft}}
+
+\predate{\par\begin{flushleft}\large\vskip -1em}
+\postdate{\end{flushleft}  }
+
+\makeatletter
+\def\@seccntformat#1{\llap{\csname the#1\endcsname \hspace{.075 in}}}
+\makeatother
+
+% suppress chapter in section numbering
+\renewcommand*\thesection{\arabic{section}}
+
+% spacing of bulleted lists
+\usepackage{enumitem} %control spacing of enumerated items
+\setlist[itemize]{noitemsep, topsep=0pt}
+
+%% remove 'abstract' title, justify text
+\renewcommand{\abstractname}{\large}
+\renewenvironment{abstract} {\abstractname \justifying \rm \normalsize }
+
+\newlength\tbspace
+\setlength\tbspace{.25in}
+
+% units.
+%\usepackage{units}
+
+
+\def\tightlist{}
+
+
+
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+
+\begin{document}
+\maketitle
+
+
+
+
+Esse documento apresenta os resultados do cálculo do indicador
+\emph{People Near Frequent Transit - ITDP} para as cidades de Belo
+Horizonte e São Paulo.
+
+\end{document}
