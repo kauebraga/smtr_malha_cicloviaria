@@ -45,7 +45,7 @@ agrupar_od_por_rota <- function(od) {
 od_group <- agrupar_od_por_rota(od_bike) %>% slice(1:10000)
 od_weekday_peak_group <- agrupar_od_por_rota(od_bike_weekday_peak) %>% mutate(trips_mean = trips_n/22) %>% slice(1:10000)
 od_weekday_offpeak_group <- agrupar_od_por_rota(od_bike_weekday_offpeak) %>% mutate(trips_mean = trips_n/22) %>% slice(1:10000)
-od_weekend_group <- agrupar_od_por_rota(od_bike_weekend) %>% mutate(trips_mean = trips_n/22) %>% slice(1:10000)
+od_weekend_group <- agrupar_od_por_rota(od_bike_weekend) %>% mutate(trips_mean = trips_n/8) %>% slice(1:10000)
 
 fwrite(od_weekday_peak_group %>% st_set_geometry(NULL), "../../data/smtr_malha_cicloviaria/trips_per_route_weekdays_peak.csv")
 fwrite(od_weekday_offpeak_group %>% st_set_geometry(NULL), "../../data/smtr_malha_cicloviaria/trips_per_route_weekdays_offpeak.csv")
@@ -96,10 +96,11 @@ intersecao_od_osm <- function(od) {
 
 od_weekday_peak_group_vias <- intersecao_od_osm(od_weekday_peak_group)
 od_weekday_offpeak_group_vias <- intersecao_od_osm(od_weekday_offpeak_group)
-od_weekend_group_vias <- intersecao_od_osm(od_weekend_group_vias)
+od_weekend_group_vias <- intersecao_od_osm(od_weekend_group)
 
-write(od_weekday_group_vias, "osm_trechos_trips_weekday.rds")
-write(od_weekend_group_vias, "osm_trechos_trips_weekend.rds")
+st_write(od_weekday_peak_group_vias,    "../../data/smtr_malha_cicloviaria/osm_trechos_trips/osm_trechos_trips_weekday_peak.gpkg")
+st_write(od_weekday_offpeak_group_vias, "../../data/smtr_malha_cicloviaria/osm_trechos_trips/osm_trechos_trips_weekday_offpeak.gpkg")
+st_write(od_weekend_group_vias,         "../../data/smtr_malha_cicloviaria/osm_trechos_trips/osm_trechos_trips_weekend.gpkg")
 
 
 leaflet() %>%
@@ -134,11 +135,13 @@ bike_network_now_buffer <- st_union(bike_network_now_buffer)
 #   addPolylines(data = od_bike_group_sf_n)
 
 
-od_weekday_vias_atual_vazio <- st_difference(od_weekday_group_vias, bike_network_now_buffer)
+od_weekday_peak_vias_atual_vazio <- st_difference(od_weekday_peak_group_vias, bike_network_now_buffer)
+od_weekday_offpeak_vias_atual_vazio <- st_difference(od_weekday_offpeak_group_vias, bike_network_now_buffer)
+od_weekday_weekend_vias_atual_vazio <- st_difference(od_weekend_group_vias, bike_network_now_buffer)
 
 leaflet() %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
-  addPolylines(data = od_weekday_vias_atual_vazio, color = "red") %>%
+  addPolylines(data = od_weekday_peak_vias_atual_vazio, color = "red") %>%
   # addPolylines(data = od_bike_vazio, color = "red") %>%
   addPolygons(data = bike_network_now_buffer, color = "blue")
 
@@ -157,7 +160,9 @@ leaflet() %>%
   addPolylines(data = od_bike_vazio_vias_group[3,], color = "red")
 
 
-st_write(od_bike_vazio_vias_group, "data/osm_bike_network_now_missing.gpkg")
+st_write(od_weekday_peak_vias_atual_vazio, "../../data/smtr_malha_cicloviaria/osm_trechos_vazios/osm_trechos_vazios_weekday_peak_atual.gpkg")
+st_write(od_weekday_offpeak_vias_atual_vazio, "../../data/smtr_malha_cicloviaria/osm_trechos_vazios/osm_trechos_vazios_weekday_offpeak_atual.gpkg")
+st_write(od_weekday_weekend_vias_atual_vazio, "../../data/smtr_malha_cicloviaria/osm_trechos_vazios/osm_trechos_vazios_weekend_atual.gpkg")
 
 
 
@@ -169,7 +174,7 @@ st_write(od_bike_vazio_vias_group, "data/osm_bike_network_now_missing.gpkg")
 
 
 # comparar com a rede projetada ---------------------------------------------------------------
-bike_network_planejada <- st_read("data-raw/bike_network_planejada/bike_network_planejada.gpkg")
+bike_network_planejada <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_planejada/bike_network_planejada.gpkg")
 bike_network_planejada <- st_zm(bike_network_planejada) %>% select(OBJECTID, Rota = Name)
 bike_network_planejada <- rbind(bike_network_now, bike_network_planejada)
 
@@ -185,43 +190,10 @@ leaflet() %>%
   addPolygons(data = bike_network_planejada, color = "red")
 
 
-od_bike_planejada_vazio <- st_difference(od_bike_group_sf_n, bike_network_planejada_buffer)
-od_bike_planejada_vazio <- od_bike_planejada_vazio %>% mutate(length_piece = st_length(.)) %>%
-  mutate(id_piece = 1:n())
+od_weekday_peak_vias_atual_planejada <- st_difference(od_weekday_peak_group_vias, bike_network_planejada_buffer)
+od_weekday_offpeak_vias_atual_planejada <- st_difference(od_weekday_offpeak_group_vias, bike_network_planejada_buffer)
+od_weekday_weekend_vias_atual_planejada <- st_difference(od_weekend_group_vias, bike_network_planejada_buffer)
 
-leaflet() %>%
-  addProviderTiles(providers$CartoDB.Positron) %>%
-  addPolylines(data = od_bike_planejada_vazio, color = "red")
-
-
-leaflet() %>%
-  addProviderTiles(providers$CartoDB.Positron) %>%
-  addPolylines(data = od_bike_vazio, color = "red") %>%
-  # addPolylines(data = od_bike_vazio, color = "red") %>%
-  addPolygons(data = bike_network_now_buffer, color = "blue")
-
-
-# fazer intersecao com o OSM para saber a via de cada um dos trechos sem ciclovia
-osm_rio_vias <- readr::read_rds("data/osm_rio.rds") %>% select(osm_id, name, highway)
-osm_rio_vias_buffer <- st_transform(osm_rio_vias, crs = 31983)
-osm_rio_vias_buffer <- st_buffer(osm_rio_vias_buffer, dist = 20)
-osm_rio_vias_buffer <- st_transform(osm_rio_vias_buffer, crs = 4326)
-
-od_bike_planejada_vazio_vias <- od_bike_planejada_vazio %>% st_intersection(osm_rio_vias_buffer)
-od_bike_planejada_vazio_vias <- od_bike_planejada_vazio_vias %>% mutate(length_piece_intersect = as.numeric(st_length(.)))
-
-# regra: tem que ter pelo menos 100m de intersecao do pedaco do trecho com o segmento do OSM para considerar
-# aquele segmento do OSM
-od_bike_planejada_vazio_vias_ok <- od_bike_planejada_vazio_vias %>% filter(length_piece_intersect > 75)
-
-# agrupar por vias semelhantes e calcular carregamento total em cada trecho
-od_bike_planejada_vazio_vias_group <- od_bike_planejada_vazio_vias_ok %>%
-  st_set_geometry(NULL) %>%
-  group_by(osm_id, name, highway) %>%
-  summarise(trips_sum = sum(trips_n, na.rm = TRUE)) %>%
-  # trazer geom de volta
-  left_join(osm_rio_vias %>% select(osm_id)) %>%
-  st_sf(crs = 4326) %>%
-  arrange(desc(trips_sum))
-
-st_write(od_bike_planejada_vazio_vias_group, "data/osm_bike_network_planned_missing.gpkg")
+st_write(od_weekday_peak_vias_atual_planejada, "../../data/smtr_malha_cicloviaria/osm_trechos_vazios/osm_trechos_vazios_weekday_peak_planejada.gpkg")
+st_write(od_weekday_offpeak_vias_atual_planejada, "../../data/smtr_malha_cicloviaria/osm_trechos_vazios/osm_trechos_vazios_weekday_offpeak_planejada.gpkg")
+st_write(od_weekday_weekend_vias_atual_planejada, "../../data/smtr_malha_cicloviaria/osm_trechos_vazios/osm_trechos_vazios_weekend_planejada.gpkg")
