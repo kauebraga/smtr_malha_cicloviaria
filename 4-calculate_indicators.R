@@ -5,12 +5,16 @@ library(mapview)
 library(leaflet)
 library(kauetools)
 sf::sf_use_s2(FALSE)
+mapviewOptions(fgb = FALSE)
 
 
 # open cenarios
-cenario1 <- read_data("osm_trechos_trips/osm_trechos_trips_weekday_peak.gpkg")
-cenario2 <- read_data("osm_trechos_trips/osm_trechos_trips_weekday_peak.gpkg")
-cenario3 <- read_data("osm_trechos_trips/osm_trechos_trips_weekday_peak.gpkg")
+cenario1 <- read_data("osm_cenarios_final/osm_cenario1_final.gpkg") %>% mutate(cenario = "cenario1")
+cenario2 <- read_data("osm_cenarios_final/osm_cenario2_final.gpkg")  %>% mutate(cenario = "cenario2")
+cenario3 <- read_data("osm_cenarios_final/osm_cenario3_final.gpkg")  %>% mutate(cenario = "cenario3")
+
+mapview(cenario1) + cenario2
+mapview(cenario2) + cenario3
 
 
 # get hex with socioeconomic variables
@@ -18,7 +22,7 @@ hex <- aopdata::read_landuse(city = "rio", geometry = TRUE) %>%
   mutate(hex_area = st_area(.))
 
 # buffer each cenario
-cenario <- cenario1
+# cenario <- cenario1
 
 calculate_buffer <- function(cenario) {
   
@@ -27,7 +31,7 @@ calculate_buffer <- function(cenario) {
   cenario_buffer <- st_transform(cenario_buffer, crs = 4326)
   
   # combine isocronas
-  cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer))
+  cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer)) %>% mutate(cenario = unique(cenario_buffer$cenario))
   
   
   # qual a proporcao da area de cada hexagono que esta dentro de uma isocrona?
@@ -48,15 +52,15 @@ calculate_buffer <- function(cenario) {
   
   a1 <- a %>%
     st_set_geometry(NULL) %>%
-    group_by(abbrev_muni, osm_id, name) %>%
+    group_by(abbrev_muni, osm_id, name, cenario) %>%
     # multiplcar a area proporcional pela variavel do setor
     # https://stackoverflow.com/questions/45947787/create-new-variables-with-mutate-at-while-keeping-the-original-ones/45947867#45947867
     summarise(across(starts_with(c("P00", "E00", "S00")), .fns = ~sum(.x * area_prop_hex, na.rm = TRUE)),
-              trips_sum = first(trips_sum))
+              trips_sum = first(trips_sum)) 
   
   a1_combine <- a_combine %>%
     st_set_geometry(NULL) %>%
-    group_by(abbrev_muni) %>%
+    group_by(abbrev_muni, cenario) %>%
     # multiplcar a area proporcional pela variavel do setor
     # https://stackoverflow.com/questions/45947787/create-new-variables-with-mutate-at-while-keeping-the-original-ones/45947867#45947867
     summarise(across(starts_with(c("P00", "E00", "S00")), .fns = ~sum(.x * area_prop_hex, na.rm = TRUE)))
@@ -65,5 +69,13 @@ calculate_buffer <- function(cenario) {
   
 }
 
+cenario1_socio <- calculate_buffer(cenario1)
+cenario2_socio <- calculate_buffer(cenario2)
+cenario3_socio <- calculate_buffer(cenario3)
 
+# juntar
+cenarios_socio <- list(cenario1_socio, cenario2_socio, cenario3_socio)
+cenarios_socio <- purrr::transpose(cenarios_socio)
+cenarios_socio <- lapply(cenarios_socio, rbindlist)
 
+cenarios_socio$buffer_cenario_combine
