@@ -5,7 +5,6 @@ library(mapview)
 library(leaflet)
 library(mapdeck)
 sf::sf_use_s2(FALSE)
-mapdeck::set_token("pk.eyJ1Ijoia2F1ZWJyYWdhIiwiYSI6ImNqa2JoN3VodDMxa2YzcHFxMzM2YWw1bmYifQ.XAhHAgbe0LcDqKYyqKYIIQ")
 
 
 bike_network_now <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_atual/bike_network_atual.gpkg") %>%
