@@ -10,9 +10,9 @@ mapviewOptions(fgb = FALSE)
 
 # open network
 bike_network_now <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_atual/bike_network_atual.gpkg") %>%
-  select(OBJECTID, Rota) %>% st_zm(bike_network_planejada)
+  select(OBJECTID, Rota) %>% st_zm(bike_network_planejada) %>% mutate(fase = "fase1")
 bike_network_planejada <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_planejada/bike_network_planejada.gpkg")
-bike_network_planejada <- st_zm(bike_network_planejada) %>% select(OBJECTID, Rota = Name)
+bike_network_planejada <- st_zm(bike_network_planejada) %>% select(OBJECTID, Rota = Name) %>% mutate(fase = "fase2")
 bike_network_planejada <- rbind(bike_network_now, bike_network_planejada)
 
 
@@ -25,7 +25,7 @@ osm_rio_vias <- osm_rio_vias %>% filter(highway %in% c("primary", "secondary", "
                                                        "trunk_link", "primary_link", "secondary_link", "tertiary_link", 
                                                        "motorway", "cycleway"))
 # export
-kauetools::write_data(osm_rio_vias, "osm_vias_filter.gpkg")
+kauetools::write_data(osm_rio_vias, "osm_vias_filter.gpkg", append = FALSE)
 
 # osm_rio_vias_buffer <- st_transform(osm_rio_vias, crs = 31983)
 # osm_rio_vias_buffer <- st_buffer(osm_rio_vias_buffer, dist = 10)
@@ -59,26 +59,16 @@ intersecao_bike_osm <- function(bike_network) {
   
   # regra: tem que ter pelo menos 50m e 70% de intersecao do pedaco do trecho com o segmento do OSM para considerar
   # aquele segmento do OSM
-  od_group_vias <- od_group_vias %>% mutate(ok = ifelse(length_piece_intersect > 100, TRUE,
+  od_group_vias <- od_group_vias %>% mutate(ok = ifelse(length_piece_intersect > 100 & percent_piece_intersect > 0.4, TRUE,
                                                         ifelse(length_piece_intersect > 20 & percent_piece_intersect > 0.9, TRUE,
-                                                               ifelse(length_piece_intersect > 50 & percent_piece_intersect > 0.5, TRUE, FALSE))))
+                                                               ifelse(length_piece_intersect > 50 & percent_piece_intersect > 0.6, TRUE, FALSE))))
   od_group_vias_ok <- od_group_vias %>% filter(ok)
   
   od_group_vias_ok <- od_group_vias_ok %>%
-    select(osm_id, name, highway, OBJECTID, Rota)
+    select(osm_id, name, highway, OBJECTID, Rota, fase)
   
-  # leaflet() %>%
-  #   addProviderTiles(providers$CartoDB.Positron) %>%
-  #   addPolylines(data = od_group_vias_ok, color = "red") %>%
-  #   addPolylines(data = bike_network, color = "blue", group = "bike") %>%
-  #   addLayersControl(overlayGroups = "bike")
+  # agrupar por nome de via ??????????????
   
-  # # agrupar por vias semelhantes e calcular carregamento total em cada trecho
-  # od_group_vias_ok <- od_group_vias_ok %>%
-  #   st_set_geometry(NULL) %>%
-  #   # trazer geom de volta
-  #   left_join(osm_rio_vias %>% select(osm_id)) %>%
-  #   st_sf(crs = 4326)
   
 }
 
@@ -88,7 +78,7 @@ osm_bike_planejada <- intersecao_bike_osm(bike_network_planejada)
 # mapview(osm_bike_now) + bike_network_now
 
 # save
-kauetools::write_data(osm_bike_now,       "osm_rede/osm_bike_now.gpkg")
-kauetools::write_data(osm_bike_planejada, "osm_rede/osm_bike_planejada.gpkg")
+kauetools::write_data(osm_bike_now,       "osm_rede/osm_bike_now.gpkg", append = FALSE)
+kauetools::write_data(osm_bike_planejada, "osm_rede/osm_bike_planejada.gpkg", append = FALSE)
 
 
