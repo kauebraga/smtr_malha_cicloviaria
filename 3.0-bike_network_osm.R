@@ -28,7 +28,7 @@ osm_rio_vias <- osm_rio_vias %>% filter(highway %in% c("primary", "secondary", "
                                                        "trunk_link", "primary_link", "secondary_link", "tertiary_link", 
                                                        "motorway", "cycleway"))
 # export
-st_write(osm_rio_vias, "../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg")
+st_write(osm_rio_vias, "../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg", append = FALSE)
 
 # osm_rio_vias_buffer <- st_transform(osm_rio_vias, crs = 31983)
 # osm_rio_vias_buffer <- st_buffer(osm_rio_vias_buffer, dist = 10)
