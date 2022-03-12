@@ -16,11 +16,14 @@ sf::sf_use_s2(FALSE)
 # fazer intersecao da rotas OD com os trechos do OSM ----------------------
 
 # abrir dados viagens de pico de dia da semana
-od_weekday_peak_group <- kauetools::read_data("trips_group/trips_group_weekdays_peak.geojson")
+od_weekday_peak_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_peak.gpkg")
+od_weekday_offpeak_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_offpeak.gpkg")
+od_weekend_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekends.gpkg")
 # mapview(od_weekday_peak_group)
 
 # abrir osm p/ rio
-osm_rio_vias <- kauetools::read_data("osm_vias_filter.gpkg")
+osm_rio_vias <- st_read("../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg")
+
 
 # od <- od_weekday_peak_group
 
@@ -67,9 +70,9 @@ od_weekday_peak_group_vias <- intersecao_od_osm(od_weekday_peak_group)
 od_weekday_offpeak_group_vias <- intersecao_od_osm(od_weekday_offpeak_group)
 od_weekend_group_vias <- intersecao_od_osm(od_weekend_group)
 
-st_write(od_weekday_peak_group_vias,    "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_peak.geojson", append = FALSE)
-st_write(od_weekday_offpeak_group_vias, "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_offpeak.geojson", append = FALSE)
-st_write(od_weekend_group_vias,         "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekend.geojson", append = FALSE)
+st_write(od_weekday_peak_group_vias,    "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_peak.gpkg", append = FALSE)
+st_write(od_weekday_offpeak_group_vias, "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_offpeak.gpkg", append = FALSE)
+st_write(od_weekend_group_vias,         "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekend.gpkg", append = FALSE)
 
 mapview(od_weekday_peak_group_vias)
 

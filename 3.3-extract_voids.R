@@ -11,9 +11,9 @@ sf::sf_use_s2(FALSE)
 
 
 # abrir rotas da OD agrupadas ---------------------------------------------
-od_weekday_peak_group_vias <-    kauetools::read_data("3.2-osm_trechos_trips/osm_trips_weekday_peak.geojson")
-od_weekday_offpeak_group_vias <- kauetools::read_data("3.2-osm_trechos_trips/osm_trips_weekday_offpeak.geojson")
-od_weekend_group_vias <-         kauetools::read_data("3.2-osm_trechos_trips/osm_trips_weekend.geojson")
+od_weekday_peak_group_vias <-    st_read("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_peak.gpkg")
+od_weekday_offpeak_group_vias <- st_read("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_offpeak.gpkg")
+od_weekend_group_vias <-         st_read("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekend.gpkg")
 
 
 
@@ -88,15 +88,22 @@ st_write(od_weekday_weekend_vias_atual_vazio, "../../data/smtr_malha_cicloviaria
 
 # comparar com a rede projetada ---------------------------------------------------------------
 
-fs::dir_ls("../../data/smtr_malha_cicloviaria/osm_rede")
-osm_bike_planejada <- kauetools::read_data("osm_rede/osm_bike_planejada.gpkg")
+osm_bike_planejada <- st_read("../../data/smtr_malha_cicloviaria/3-osm_malha/osm_malha_planejada.gpkg")
 
 # quais trechos estao na OD mas nao estao na rede planejada?
-osm_bike_vazios <- od_weekday_peak_group_vias %>% filter(osm_id %nin% osm_bike_planejada$osm_id)
+osm_vazios_weekday_peak <- od_weekday_peak_group_vias %>% filter(osm_id %nin% osm_bike_planejada$osm_id)
+osm_vazios_weekday_offpeak <- od_weekday_offpeak_group_vias %>% filter(osm_id %nin% osm_bike_planejada$osm_id)
+osm_vazios_weekend <- od_weekend_group_vias %>% filter(osm_id %nin% osm_bike_planejada$osm_id)
 
 # salvar
-kauetools::write_data(osm_bike_vazios, 
-                      "osm_trechos_vazios/osm_trechos_vazios_weekday_peak_planejada.gpkg",
+kauetools::write_data(osm_vazios_weekday_peak, 
+                      "../../data/smtr_malha_cicloviaria/3.3-osm_vazios/osm_vazios_planejada_weekday_peak.gpkg",
+                      append = FALSE)
+kauetools::write_data(osm_vazios_weekday_offpeak, 
+                      "../../data/smtr_malha_cicloviaria/3.3-osm_vazios/osm_vazios_planejada_weekday_offpeak.gpkg",
+                      append = FALSE)
+kauetools::write_data(osm_vazios_weekend, 
+                      "../../data/smtr_malha_cicloviaria/3.3-osm_vazios/osm_vazios_planejada_weekend.gpkg",
                       append = FALSE)
 
 

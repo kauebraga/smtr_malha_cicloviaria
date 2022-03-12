@@ -8,14 +8,15 @@ library(kauetools)
 library(aopdata)
 sf::sf_use_s2(FALSE)
 mapviewOptions(fgb = FALSE)
-mapviewOptions(platform = "mapdeck")
+# mapviewOptions(platform = "mapdeck")
+mapviewOptions(platform = "leafgl")
 mapdeck::set_token(fread("../../data/mapbox_key.csv")$key)
 
 
 # open cenarios
-cenario1 <- read_data("4-osm_cenarios/osm_cenario1_group.gpkg") %>% mutate(cenario = "cenario1")
-cenario2 <- read_data("4-osm_cenarios/osm_cenario2_group.gpkg")  %>% mutate(cenario = "cenario2")
-cenario3 <- read_data("4-osm_cenarios/osm_cenario3_group.gpkg")  %>% mutate(cenario = "cenario3")
+cenario1 <- st_read("../../data/smtr_malha_cicloviaria/4-osm_cenarios/osm_cenario1.gpkg") %>% mutate(cenario = "cenario1")
+cenario2 <- st_read("../../data/smtr_malha_cicloviaria/4-osm_cenarios/osm_cenario2.gpkg")  %>% mutate(cenario = "cenario2")
+cenario3 <- st_read("../../data/smtr_malha_cicloviaria/4-osm_cenarios/osm_cenario3.gpkg")  %>% mutate(cenario = "cenario3")
 
 # mapview(cenario1) + cenario2
 # mapview(cenario2) + cenario3
@@ -36,7 +37,10 @@ calculate_buffer <- function(cenario) {
   
   # combine isocronas
   cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer)) %>% mutate(cenario = unique(cenario_buffer$cenario))
+  mapview(cenario_buffer_combine)
   
+  # group by name
+  cenario_buffer_group <- 
   
   # qual a proporcao da area de cada hexagono que esta dentro de uma isocrona?
   a <- st_intersection(cenario_buffer,
@@ -56,7 +60,7 @@ calculate_buffer <- function(cenario) {
   
   a1 <- a %>%
     st_set_geometry(NULL) %>%
-    group_by(sigla_muni, name, cenario, fase) %>%
+    group_by(sigla_muni, osm_id, name, cenario, fase) %>%
     # multiplcar a area proporcional pela variavel do setor
     # https://stackoverflow.com/questions/45947787/create-new-variables-with-mutate-at-while-keeping-the-original-ones/45947867#45947867
     # summarise(across(starts_with(c("P00", "E00", "S00")), .fns = ~sum(.x * area_prop_hex, na.rm = TRUE)),
@@ -87,3 +91,8 @@ cenarios_socio <- lapply(cenarios_socio, rbindlist)
 
 cenarios_socio$buffer_cenario_combine
 cenarios_socio$buffer_cenario %>% View()
+
+
+# check only fase 3
+a <- cenarios_socio$buffer_cenario %>%
+  filter(fase == "fase3")

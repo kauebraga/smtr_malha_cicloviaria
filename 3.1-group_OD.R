@@ -19,7 +19,7 @@ sf::sf_use_s2(FALSE)
 
 
 # open ttmatrix
-ttmatrix <- readr::read_rds("../../data/smtr_malha_cicloviaria/ttmatrix_detailed_rio_bike.rds")
+ttmatrix <- readr::read_rds("../../data/smtr_malha_cicloviaria/1-ttmatrix_stations/ttmatrix_detailed_rio_bike.rds")
 ttmatrix <- ttmatrix %>% select(initial_station_name = fromId, final_station_name = toId, ttime_r5r = total_duration,
                                 dist = distance)
 # open OD
@@ -59,22 +59,24 @@ od_weekday_peak_group <- agrupar_od_por_rota(od_bike_weekday_peak) %>% mutate(tr
 od_weekday_offpeak_group <- agrupar_od_por_rota(od_bike_weekday_offpeak) %>% mutate(trips_mean = trips_n/22) %>% filter(trips_mean >= 1)
 od_weekend_group <- agrupar_od_por_rota(od_bike_weekend) %>% mutate(trips_mean = trips_n/8) %>% filter(trips_mean >= 1)
 
-fwrite(od_weekday_peak_group %>% st_set_geometry(NULL),    "../../data/smtr_malha_cicloviaria/trips_group/trips_group_weekdays_peak.csv")
-fwrite(od_weekday_offpeak_group %>% st_set_geometry(NULL), "../../data/smtr_malha_cicloviaria/trips_group/trips_group_weekdays_offpeak.csv")
-fwrite(od_weekend_group %>% st_set_geometry(NULL),         "../../data/smtr_malha_cicloviaria/trips_group/trips_group_weekend.csv")
+fwrite(od_group %>% st_set_geometry(NULL),    "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group.csv")
+fwrite(od_weekday_peak_group %>% st_set_geometry(NULL),    "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_peak.csv")
+fwrite(od_weekday_offpeak_group %>% st_set_geometry(NULL), "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_offpeak.csv")
+fwrite(od_weekend_group %>% st_set_geometry(NULL),         "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekend.csv")
 
-st_write(od_weekday_peak_group,    "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_peak.geojson", append = FALSE)
-st_write(od_weekday_offpeak_group, "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_offpeak.geojson", append = FALSE)
-st_write(od_weekend_group,         "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekends.geojson", append = FALSE)
+st_write(od_group,                 "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group.gpkg")
+st_write(od_weekday_peak_group,    "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_peak.gpkg", append = FALSE)
+st_write(od_weekday_offpeak_group, "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_offpeak.gpkg", append = FALSE)
+st_write(od_weekend_group,         "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekends.gpkg", append = FALSE)
 
-# maps
-
-leaflet() %>%
-  addProviderTiles(providers$CartoDB.Positron) %>%
-  addPolylines(data = od_weekday_group[1:100,], color = "red") 
-
-leaflet() %>%
-  addProviderTiles(providers$CartoDB.Positron) %>%
-  addPolylines(data = od_weekend_group[1:100,], color = "red") 
-
-mapview(od_weekend_group[1:100,])
+# # maps
+# 
+# leaflet() %>%
+#   addProviderTiles(providers$CartoDB.Positron) %>%
+#   addPolylines(data = od_weekday_group[1:100,], color = "red") 
+# 
+# leaflet() %>%
+#   addProviderTiles(providers$CartoDB.Positron) %>%
+#   addPolylines(data = od_weekend_group[1:100,], color = "red") 
+# 
+# mapview(od_weekend_group[1:100,])

@@ -30,6 +30,12 @@ osm_rio_vias <- osm_rio_vias %>% filter(highway %in% c("primary", "secondary", "
 # export
 st_write(osm_rio_vias, "../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg", append = FALSE)
 
+# agrupoar por nome, tipo de via e qtde de faixas
+osm_rio_vias_group <- osm_rio_vias %>%
+  group_by(name, highway, faixas) %>%
+  summarise(length_osm = sum(length_osm))
+
+
 # osm_rio_vias_buffer <- st_transform(osm_rio_vias, crs = 31983)
 # osm_rio_vias_buffer <- st_buffer(osm_rio_vias_buffer, dist = 10)
 # osm_rio_vias_buffer <- st_transform(osm_rio_vias_buffer, crs = 4326)
@@ -68,7 +74,8 @@ intersecao_bike_osm <- function(bike_network) {
   od_group_vias_ok <- od_group_vias %>% filter(ok)
   
   od_group_vias_ok <- od_group_vias_ok %>%
-    select(osm_id, name, highway, OBJECTID, Rota, fase)
+    select(osm_id, name, highway, faixas, OBJECTID, Rota, fase)
+    # select(osm_id, name, highway, OBJECTID, Rota, fase)
   
   # agrupar por nome de via ??????????????
   
@@ -78,10 +85,10 @@ intersecao_bike_osm <- function(bike_network) {
 osm_bike_now <- intersecao_bike_osm(bike_network_now)
 osm_bike_planejada <- intersecao_bike_osm(bike_network_planejada)
 
-a <-osm_bike_now %>% filter(is.na(name))
-table(a$highway)
-mapview(a)
-mapview(a %>% filter(highway == "residential"))
+# a <-osm_bike_now %>% filter(is.na(name))
+# table(a$highway)
+# mapview(a)
+# mapview(a %>% filter(highway == "residential"))
 
 # mapview(osm_bike_now) + bike_network_now
 
