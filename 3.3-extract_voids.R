@@ -10,6 +10,11 @@ mapdeck::set_token(fread("../../data/mapbox_key.csv")$key)
 sf::sf_use_s2(FALSE)
 
 
+# abrir rotas da OD agrupadas ---------------------------------------------
+od_weekday_peak_group_vias <-    kauetools::read_data("3.2-osm_trechos_trips/osm_trips_weekday_peak.geojson")
+od_weekday_offpeak_group_vias <- kauetools::read_data("3.2-osm_trechos_trips/osm_trips_weekday_offpeak.geojson")
+od_weekend_group_vias <-         kauetools::read_data("3.2-osm_trechos_trips/osm_trips_weekend.geojson")
+
 
 
 # comparar com a rede atual -------------------------------------------------------------------
@@ -82,7 +87,6 @@ st_write(od_weekday_weekend_vias_atual_vazio, "../../data/smtr_malha_cicloviaria
 
 
 # comparar com a rede projetada ---------------------------------------------------------------
-od_weekday_peak_group_vias <- kauetools::read_data("osm_trechos_trips/osm_trechos_trips_weekday_peak.gpkg")
 
 fs::dir_ls("../../data/smtr_malha_cicloviaria/osm_rede")
 osm_bike_planejada <- kauetools::read_data("osm_rede/osm_bike_planejada.gpkg")

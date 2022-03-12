@@ -1,3 +1,8 @@
+# Esse script pega a matriz de viagens do bikesharing e agrupa para cada par
+# origem-destino (estacao dos sistema) e calcula o total de viagens considerando:
+# semana e final de semana
+# pico e fora pico
+
 library(data.table)
 library(sf)
 library(dplyr)
@@ -54,12 +59,13 @@ od_weekday_peak_group <- agrupar_od_por_rota(od_bike_weekday_peak) %>% mutate(tr
 od_weekday_offpeak_group <- agrupar_od_por_rota(od_bike_weekday_offpeak) %>% mutate(trips_mean = trips_n/22) %>% filter(trips_mean >= 1)
 od_weekend_group <- agrupar_od_por_rota(od_bike_weekend) %>% mutate(trips_mean = trips_n/8) %>% filter(trips_mean >= 1)
 
-fwrite(od_weekday_peak_group %>% st_set_geometry(NULL), "../../data/smtr_malha_cicloviaria/trips_per_route_weekdays_peak.csv")
-fwrite(od_weekday_offpeak_group %>% st_set_geometry(NULL), "../../data/smtr_malha_cicloviaria/trips_per_route_weekdays_offpeak.csv")
-st_write(od_weekday_peak_group, "../../data/smtr_malha_cicloviaria/trips_per_route_weekdays_peak.gpkg", append = FALSE)
-st_write(od_weekday_offpeak_group, "../../data/smtr_malha_cicloviaria/trips_per_route_weekdays_offpeak.gpkg", append = FALSE)
-fwrite(od_weekend_group %>% st_set_geometry(NULL), "../../data/smtr_malha_cicloviaria/trips_per_route_weekend.csv")
-st_write(od_weekend_group, "../../data/smtr_malha_cicloviaria/trips_per_route_weekends.gpkg", append = FALSE)
+fwrite(od_weekday_peak_group %>% st_set_geometry(NULL),    "../../data/smtr_malha_cicloviaria/trips_group/trips_group_weekdays_peak.csv")
+fwrite(od_weekday_offpeak_group %>% st_set_geometry(NULL), "../../data/smtr_malha_cicloviaria/trips_group/trips_group_weekdays_offpeak.csv")
+fwrite(od_weekend_group %>% st_set_geometry(NULL),         "../../data/smtr_malha_cicloviaria/trips_group/trips_group_weekend.csv")
+
+st_write(od_weekday_peak_group,    "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_peak.geojson", append = FALSE)
+st_write(od_weekday_offpeak_group, "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_offpeak.geojson", append = FALSE)
+st_write(od_weekend_group,         "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekends.geojson", append = FALSE)
 
 # maps
 

@@ -13,9 +13,9 @@ mapdeck::set_token(fread("../../data/mapbox_key.csv")$key)
 
 
 # open cenarios
-cenario1 <- read_data("osm_cenarios_final/osm_cenario1_group_final.gpkg") %>% mutate(cenario = "cenario1")
-cenario2 <- read_data("osm_cenarios_final/osm_cenario2_group_final.gpkg")  %>% mutate(cenario = "cenario2")
-cenario3 <- read_data("osm_cenarios_final/osm_cenario3_group_final.gpkg")  %>% mutate(cenario = "cenario3")
+cenario1 <- read_data("4-osm_cenarios/osm_cenario1_group.gpkg") %>% mutate(cenario = "cenario1")
+cenario2 <- read_data("4-osm_cenarios/osm_cenario2_group.gpkg")  %>% mutate(cenario = "cenario2")
+cenario3 <- read_data("4-osm_cenarios/osm_cenario3_group.gpkg")  %>% mutate(cenario = "cenario3")
 
 # mapview(cenario1) + cenario2
 # mapview(cenario2) + cenario3

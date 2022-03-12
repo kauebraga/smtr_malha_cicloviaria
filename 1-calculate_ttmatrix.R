@@ -81,4 +81,4 @@ readr::write_rds(ttm1_detailed, "../../data/smtr_malha_cicloviaria/ttmatrix_deta
 
 # for output
 ttm1_detailed %>% select(-option, -segment, -segment_duration, -wait, -route) %>%
-  st_write("data/ttmatrix_bike_sharing.gpkg")
+  st_write("../../data/smtr_malha_cicloviaria/ttmatrix_stations/ttmatrix_stations.geojson")

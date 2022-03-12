@@ -1,3 +1,6 @@
+# Esse script transforma as rotas com viagens que foram estimada a partir
+# dos dados de bikesharing em trechos OSM e calcula a quantidade de viagens em cada trecho OSM
+
 library(data.table)
 library(sf)
 library(dplyr)
@@ -13,7 +16,7 @@ sf::sf_use_s2(FALSE)
 # fazer intersecao da rotas OD com os trechos do OSM ----------------------
 
 # abrir dados viagens de pico de dia da semana
-od_weekday_peak_group <- kauetools::read_data("trips_per_route_weekdays_peak.gpkg")
+od_weekday_peak_group <- kauetools::read_data("trips_group/trips_group_weekdays_peak.geojson")
 # mapview(od_weekday_peak_group)
 
 # abrir osm p/ rio
@@ -64,9 +67,9 @@ od_weekday_peak_group_vias <- intersecao_od_osm(od_weekday_peak_group)
 od_weekday_offpeak_group_vias <- intersecao_od_osm(od_weekday_offpeak_group)
 od_weekend_group_vias <- intersecao_od_osm(od_weekend_group)
 
-st_write(od_weekday_peak_group_vias,    "../../data/smtr_malha_cicloviaria/osm_trechos_trips/osm_trechos_trips_weekday_peak.gpkg", append = FALSE)
-st_write(od_weekday_offpeak_group_vias, "../../data/smtr_malha_cicloviaria/osm_trechos_trips/osm_trechos_trips_weekday_offpeak.gpkg", append = FALSE)
-st_write(od_weekend_group_vias,         "../../data/smtr_malha_cicloviaria/osm_trechos_trips/osm_trechos_trips_weekend.gpkg", append = FALSE)
+st_write(od_weekday_peak_group_vias,    "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_peak.geojson", append = FALSE)
+st_write(od_weekday_offpeak_group_vias, "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_offpeak.geojson", append = FALSE)
+st_write(od_weekend_group_vias,         "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekend.geojson", append = FALSE)
 
 mapview(od_weekday_peak_group_vias)
 

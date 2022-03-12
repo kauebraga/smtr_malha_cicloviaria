@@ -32,24 +32,24 @@ cenario3 <- rbind(cenario2, osm_bike_vazios)
 # mapview(cenario3)
 
 # salvar
-kauetools::write_data(cenario1, "osm_cenarios_final/osm_cenario1_final.gpkg", append = FALSE)
-kauetools::write_data(cenario2, "osm_cenarios_final/osm_cenario2_final.gpkg", append = FALSE)
-kauetools::write_data(cenario3, "osm_cenarios_final/osm_cenario3_final.gpkg", append = FALSE)
+kauetools::write_data(cenario1, "4-osm_cenarios/osm_cenario1.gpkg", append = FALSE)
+kauetools::write_data(cenario2, "4-osm_cenarios/osm_cenario2.gpkg", append = FALSE)
+kauetools::write_data(cenario3, "4-osm_cenarios/osm_cenario3.gpkg", append = FALSE)
 
 
 # group by osm name and save
 cenario1_group <- cenario1 %>%
   group_by(name, fase) %>%
-  summarise(trips_sum = sum(trips_sum, na.rm = TRUE))
+  summarise(trips_sum = mean(trips_sum, na.rm = TRUE))
 cenario2_group <- cenario2 %>%
   group_by(name, fase) %>%
-  summarise(trips_sum = sum(trips_sum, na.rm = TRUE))
+  summarise(trips_sum = mean(trips_sum, na.rm = TRUE))
 cenario3_group <- cenario3 %>%
   group_by(name, fase) %>%
-  summarise(trips_sum = sum(trips_sum, na.rm = TRUE))
+  summarise(trips_sum = mean(trips_sum, na.rm = TRUE))
 
 # mapview(cenario1_group)
 
-kauetools::write_data(cenario1_group, "osm_cenarios_final/osm_cenario1_group_final.gpkg", append = FALSE)
-kauetools::write_data(cenario2_group, "osm_cenarios_final/osm_cenario2_group_final.gpkg", append = FALSE)
-kauetools::write_data(cenario3_group, "osm_cenarios_final/osm_cenario3_group_final.gpkg", append = FALSE)
+kauetools::write_data(cenario1_group, "4-osm_cenarios/osm_cenario1_group.gpkg", append = FALSE)
+kauetools::write_data(cenario2_group, "4-osm_cenarios/osm_cenario2_group.gpkg", append = FALSE)
+kauetools::write_data(cenario3_group, "4-osm_cenarios/osm_cenario3_group.gpkg", append = FALSE)

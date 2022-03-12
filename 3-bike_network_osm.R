@@ -1,3 +1,6 @@
+# Esse script transforma a malha cicloviaria (atual e planejada) para trechos
+# do OSM
+
 library(data.table)
 library(sf)
 library(dplyr)
@@ -17,7 +20,7 @@ bike_network_planejada <- rbind(bike_network_now, bike_network_planejada)
 
 
 
-osm_rio_vias <- readr::read_rds("../../data/smtr_malha_cicloviaria/osm_rio.rds") %>% select(osm_id, name, highway) %>% mutate(length_osm = st_length(.))
+osm_rio_vias <- readr::read_rds("../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio.rds") %>% select(osm_id, name, highway) %>% mutate(length_osm = st_length(.))
 count(osm_rio_vias %>% st_set_geometry(NULL), highway, sort = TRUE)
 # manter somente certos tipos de highway
 osm_rio_vias <- osm_rio_vias %>% filter(highway %in% c("primary", "secondary", "tertiary", "trunk", "residential", 
@@ -25,7 +28,7 @@ osm_rio_vias <- osm_rio_vias %>% filter(highway %in% c("primary", "secondary", "
                                                        "trunk_link", "primary_link", "secondary_link", "tertiary_link", 
                                                        "motorway", "cycleway"))
 # export
-kauetools::write_data(osm_rio_vias, "osm_vias_filter.gpkg", append = FALSE)
+kauetools::write_data(osm_rio_vias, "2-osm_rio/osm_rio_filter.gpkg", append = FALSE)
 
 # osm_rio_vias_buffer <- st_transform(osm_rio_vias, crs = 31983)
 # osm_rio_vias_buffer <- st_buffer(osm_rio_vias_buffer, dist = 10)
@@ -78,7 +81,7 @@ osm_bike_planejada <- intersecao_bike_osm(bike_network_planejada)
 # mapview(osm_bike_now) + bike_network_now
 
 # save
-kauetools::write_data(osm_bike_now,       "osm_rede/osm_bike_now.gpkg", append = FALSE)
-kauetools::write_data(osm_bike_planejada, "osm_rede/osm_bike_planejada.gpkg", append = FALSE)
+kauetools::write_data(osm_bike_now,       "3-osm_malha/osm_malha_atual.gpkg", append = FALSE)
+kauetools::write_data(osm_bike_planejada, "3-osm_malha/osm_malha_planejada.gpkg", append = FALSE)
 
 
