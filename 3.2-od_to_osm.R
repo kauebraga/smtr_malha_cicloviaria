@@ -7,7 +7,8 @@ library(dplyr)
 library(mapview)
 library(leaflet)
 library(Hmisc)
-mapviewOptions(platform = "mapdeck")
+# mapviewOptions(platform = "mapdeck")
+mapviewOptions(fgb = FALSE)
 mapdeck::set_token(fread("../../data/mapbox_key.csv")$key)
 sf::sf_use_s2(FALSE)
 
@@ -22,7 +23,7 @@ od_weekend_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/t
 # mapview(od_weekday_peak_group)
 
 # abrir osm p/ rio
-osm_rio_vias <- st_read("../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg")
+osm_rio_vias <- st_read("../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter_group.gpkg")
 
 
 # od <- od_weekday_peak_group
@@ -57,6 +58,7 @@ intersecao_od_osm <- function(od) {
   # agrupar por vias semelhantes e calcular carregamento total em cada trecho
   osm_od_ok_group <- osm_od_ok %>%
     st_set_geometry(NULL) %>%
+    # group_by(name, highway) %>%
     group_by(osm_id, name, highway) %>%
     summarise(trips_sum = sum(trips_n, na.rm = TRUE)) %>%
     # trazer geom de volta
@@ -74,6 +76,6 @@ st_write(od_weekday_peak_group_vias,    "../../data/smtr_malha_cicloviaria/3.2-o
 st_write(od_weekday_offpeak_group_vias, "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_offpeak.gpkg", append = FALSE)
 st_write(od_weekend_group_vias,         "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekend.gpkg", append = FALSE)
 
-mapview(od_weekday_peak_group_vias)
+# mapview(od_weekday_peak_group_vias)
 
 

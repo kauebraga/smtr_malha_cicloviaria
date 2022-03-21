@@ -11,15 +11,17 @@ sf::sf_use_s2(FALSE)
 mapviewOptions(fgb = FALSE)
 
 
-# open network
-bike_network_now <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_atual/bike_network_atual.gpkg") %>%
-  select(OBJECTID, Rota) %>% st_zm(bike_network_planejada) %>% mutate(fase = "fase1")
+# open bike network ------------
+bike_network_now <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_atual/Malha_Final_Existente_20220318.geojson") %>%
+  select(OBJECTID = AP, Rota) %>% st_zm(.) %>% mutate(fase = "fase1")
+st_geometry(bike_network_now) = "geom"
 bike_network_planejada <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_planejada/bike_network_planejada.gpkg")
 bike_network_planejada <- st_zm(bike_network_planejada) %>% select(OBJECTID, Rota = Name) %>% mutate(fase = "fase2")
 bike_network_planejada <- rbind(bike_network_now, bike_network_planejada)
 
 
 
+# open OSM ------------
 osm_rio_vias <- readr::read_rds("../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio.rds") %>% select(osm_id, name, highway, faixas) %>% mutate(length_osm = st_length(.))
 count(osm_rio_vias %>% st_set_geometry(NULL), highway, sort = TRUE)
 # manter somente certos tipos de highway
@@ -29,12 +31,17 @@ osm_rio_vias <- osm_rio_vias %>% filter(highway %in% c("primary", "secondary", "
                                                        "motorway", "cycleway"))
 # export
 st_write(osm_rio_vias, "../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg", append = FALSE)
+# osm_rio_vias <- st_read("../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg")
 
 # agrupoar por nome, tipo de via e qtde de faixas
 osm_rio_vias_group <- osm_rio_vias %>%
-  group_by(name, highway, faixas) %>%
-  summarise(length_osm = sum(length_osm))
+  group_by(name, highway) %>%
+  summarise(length_osm = sum(length_osm)) %>%
+  ungroup() %>%
+  mutate(osm_id = 1:n())
 
+st_write(osm_rio_vias_group, "../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter_group.gpkg", append = FALSE)
+# osm_rio_vias_group <- st_read("../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter_group.gpkg")
 
 # osm_rio_vias_buffer <- st_transform(osm_rio_vias, crs = 31983)
 # osm_rio_vias_buffer <- st_buffer(osm_rio_vias_buffer, dist = 10)
@@ -74,10 +81,17 @@ intersecao_bike_osm <- function(bike_network) {
   od_group_vias_ok <- od_group_vias %>% filter(ok)
   
   od_group_vias_ok <- od_group_vias_ok %>%
-    select(osm_id, name, highway, faixas, OBJECTID, Rota, fase)
-    # select(osm_id, name, highway, OBJECTID, Rota, fase)
+    select(osm_id, name, highway, OBJECTID, Rota, fase)
+    # select(name, highway, OBJECTID, Rota, fase)
   
   # agrupar por nome de via ??????????????
+  od_group_vias_ok_group <- od_group_vias_ok %>%
+    group_by(name, highway, fase) %>%
+    summarise()
+  
+  # mapview(od_group_vias_ok_group)  + mapview(bike_network_now)
+  
+  return(od_group_vias_ok)
   
   
 }
@@ -90,7 +104,14 @@ osm_bike_planejada <- intersecao_bike_osm(bike_network_planejada)
 # mapview(a)
 # mapview(a %>% filter(highway == "residential"))
 
-# mapview(osm_bike_now) + bike_network_now
+# mapview(osm_bike_now) + mapview(bike_network_now)
+
+leaflet() %>%
+  addTiles() %>%
+  addPolylines(data = osm_bike_now, group = "osm", color = "red") %>%
+  addPolylines(data = bike_network_now, group = "bike") %>%
+  addLayersControl(overlayGroups = c("osm", "bike"),
+                   options = layersControlOptions(collapsed = FALSE))
 
 # save
 kauetools::write_data(osm_bike_now,       "3-osm_malha/osm_malha_atual.gpkg", append = FALSE)

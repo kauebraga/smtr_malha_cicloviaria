@@ -9,7 +9,7 @@ library(aopdata)
 sf::sf_use_s2(FALSE)
 mapviewOptions(fgb = FALSE)
 # mapviewOptions(platform = "mapdeck")
-mapviewOptions(platform = "leafgl")
+# mapviewOptions(platform = "leafgl")
 mapdeck::set_token(fread("../../data/mapbox_key.csv")$key)
 
 
@@ -25,6 +25,11 @@ cenario3 <- st_read("../../data/smtr_malha_cicloviaria/4-osm_cenarios/osm_cenari
 # get hex with socioeconomic variables
 hex <- kauetools::read_data("hex_agregado_rio_09.rds", folder = "data-raw") %>%
   mutate(hex_area = st_area(.)) %>% mutate(sigla_muni = "rio")
+# identificar a regiao de cada hex
+regioes <- st_read("../../data-raw/smtr_malha_cicloviaria/regioes_planejamento.geojson") %>% select(NOME_RP)
+# juntar com hex
+hex <- st_join(hex, regioes, largest = TRUE)
+table(hex$NOME_RP, useNA = "always")
 
 # buffer each cenario
 # cenario <- cenario1
@@ -41,17 +46,17 @@ calculate_buffer <- function(cenario) {
   
   # group by name
   cenario_buffer_group <- 
-  
-  # qual a proporcao da area de cada hexagono que esta dentro de uma isocrona?
-  a <- st_intersection(cenario_buffer,
-                       hex) %>%
+    
+    # qual a proporcao da area de cada hexagono que esta dentro de uma isocrona?
+    a <- st_intersection(cenario_buffer,
+                         hex) %>%
     # calcular a area do pedaco
     mutate(pedaco_area = st_area(.)) %>%
     # calcular a proporcao da area total do hex que esta dentro da isocrona
     mutate(area_prop_hex = as.numeric(pedaco_area) / as.numeric(hex_area))
   
   a_combine <- st_intersection(cenario_buffer_combine,
-                       hex) %>%
+                               hex) %>%
     # calcular a area do pedaco
     mutate(pedaco_area = st_area(.)) %>%
     # calcular a proporcao da area total do hex que esta dentro da isocrona
@@ -60,6 +65,7 @@ calculate_buffer <- function(cenario) {
   
   a1 <- a %>%
     st_set_geometry(NULL) %>%
+    # group_by(sigla_muni, name, cenario, fase) %>%
     group_by(sigla_muni, osm_id, name, cenario, fase) %>%
     # multiplcar a area proporcional pela variavel do setor
     # https://stackoverflow.com/questions/45947787/create-new-variables-with-mutate-at-while-keeping-the-original-ones/45947867#45947867
@@ -76,13 +82,28 @@ calculate_buffer <- function(cenario) {
     # summarise(across(starts_with(c("P00", "E00", "S00")), .fns = ~sum(.x * area_prop_hex, na.rm = TRUE)))
     summarise(across(starts_with(c("cor_", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE))))
   
-  return(list(buffer_cenario = a1, buffer_cenario_combine = a1_combine))
+  # by regiao
+  a1_combine_regiao <- a_combine %>%
+    st_set_geometry(NULL) %>%
+    group_by(sigla_muni, NOME_RP, cenario) %>%
+    summarise(across(starts_with(c("cor_", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE))))
+    
+    
+  
+  
+  return(list(buffer_cenario = a1, buffer_cenario_combine = a1_combine, buffer_cenario_combine_regioes = a1_combine_regiao))
   
 }
 
 cenario1_socio <- calculate_buffer(cenario1)
 cenario2_socio <- calculate_buffer(cenario2)
 cenario3_socio <- calculate_buffer(cenario3)
+
+
+# teste
+# cenario1_socio$buffer_cenario %>% View()
+# cenario1_socio$buffer_cenario_combine
+# cenario1_socio$buffer_cenario_combine_regioes
 
 # juntar
 cenarios_socio <- list(cenario1_socio, cenario2_socio, cenario3_socio)
