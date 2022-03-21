@@ -8,7 +8,7 @@ library(mapview)
 library(leaflet)
 library(mapdeck)
 sf::sf_use_s2(FALSE)
-mapviewOptions(fgb = FALSE)
+mapviewOptions(fgb = TRUE)
 
 
 # open bike network ------------
@@ -30,6 +30,7 @@ osm_rio_vias <- osm_rio_vias %>% filter(highway %in% c("primary", "secondary", "
                                                        "trunk_link", "primary_link", "secondary_link", "tertiary_link", 
                                                        "motorway", "cycleway"))
 # export
+file.remove("../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg")
 st_write(osm_rio_vias, "../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg", append = FALSE)
 # osm_rio_vias <- st_read("../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg")
 
@@ -89,7 +90,8 @@ intersecao_bike_osm <- function(bike_network) {
     group_by(name, highway, fase) %>%
     summarise()
   
-  # mapview(od_group_vias_ok_group)  + mapview(bike_network_now)
+  mapview(od_group_vias_ok %>% sf::st_set_crs(4326))   +
+  mapview(bike_network_now)
   
   return(od_group_vias_ok)
   
