@@ -5,7 +5,7 @@ library(mapview)
 library(leaflet)
 library(Hmisc)
 sf::sf_use_s2(FALSE)
-mapviewOptions(fgb = FALSE)
+mapviewOptions(fgb = TRUE)
 
 # abrir cenarios
 cenario1 <- st_read("../../data/smtr_malha_cicloviaria/3-osm_malha/osm_malha_atual.gpkg")
@@ -30,6 +30,10 @@ cenario3 <- rbind(cenario2, osm_bike_vazios)
 # mapview(cenario1)
 # mapview(cenario2)
 # mapview(cenario3)
+
+file.remove("../../data/smtr_malha_cicloviaria/4-osm_cenarios/osm_cenario1.gpkg")
+file.remove("../../data/smtr_malha_cicloviaria/4-osm_cenarios/osm_cenario2.gpkg")
+file.remove("../../data/smtr_malha_cicloviaria/4-osm_cenarios/osm_cenario3.gpkg")
 
 # salvar
 st_write(cenario1, "../../data/smtr_malha_cicloviaria/4-osm_cenarios/osm_cenario1.gpkg", append = FALSE)

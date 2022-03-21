@@ -6,7 +6,7 @@ library(sf)
 library(dplyr)
 library(mapview)
 library(leaflet)
-library(mapdeck)
+# library(mapdeck)
 sf::sf_use_s2(FALSE)
 mapviewOptions(fgb = TRUE)
 
@@ -90,8 +90,8 @@ intersecao_bike_osm <- function(bike_network) {
     group_by(name, highway, fase) %>%
     summarise()
   
-  mapview(od_group_vias_ok %>% sf::st_set_crs(4326))   +
-  mapview(bike_network_now)
+  # mapview(od_group_vias_ok %>% sf::st_set_crs(4326))   +
+  # mapview(bike_network_now)
   
   return(od_group_vias_ok)
   
@@ -108,15 +108,11 @@ osm_bike_planejada <- intersecao_bike_osm(bike_network_planejada)
 
 # mapview(osm_bike_now) + mapview(bike_network_now)
 
-leaflet() %>%
-  addTiles() %>%
-  addPolylines(data = osm_bike_now, group = "osm", color = "red") %>%
-  addPolylines(data = bike_network_now, group = "bike") %>%
-  addLayersControl(overlayGroups = c("osm", "bike"),
-                   options = layersControlOptions(collapsed = FALSE))
 
 # save
-kauetools::write_data(osm_bike_now,       "3-osm_malha/osm_malha_atual.gpkg", append = FALSE)
-kauetools::write_data(osm_bike_planejada, "3-osm_malha/osm_malha_planejada.gpkg", append = FALSE)
+file.remove("../../data/smtr_malha_cicloviaria/3-osm_malha/osm_malha_atual.gpkg")
+file.remove("../../data/smtr_malha_cicloviaria/3-osm_malha/osm_malha_planejada.gpkg")
+st_write(osm_bike_now,       "../../data/smtr_malha_cicloviaria/3-osm_malha/osm_malha_atual.gpkg", append = FALSE)
+st_write(osm_bike_planejada, "../../data/smtr_malha_cicloviaria/3-osm_malha/osm_malha_planejada.gpkg", append = FALSE)
 
 

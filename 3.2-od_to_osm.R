@@ -8,8 +8,8 @@ library(mapview)
 library(leaflet)
 library(Hmisc)
 # mapviewOptions(platform = "mapdeck")
-mapviewOptions(fgb = FALSE)
-mapdeck::set_token(fread("../../data/mapbox_key.csv")$key)
+mapviewOptions(fgb = TRUE)
+# mapdeck::set_token(fread("../../data/mapbox_key.csv")$key)
 sf::sf_use_s2(FALSE)
 
 
@@ -23,7 +23,7 @@ od_weekend_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/t
 # mapview(od_weekday_peak_group)
 
 # abrir osm p/ rio
-osm_rio_vias <- st_read("../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter_group.gpkg")
+osm_rio_vias <- st_read("../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg")
 
 
 # od <- od_weekday_peak_group
@@ -66,11 +66,26 @@ intersecao_od_osm <- function(od) {
     st_sf(crs = 4326) %>%
     arrange(desc(trips_sum))
   
+  # por via
+  osm_od_ok_group_group <- osm_od_ok_group %>%
+    group_by(name, highway) %>%
+    # quando agrupar por via, a quantidade de viagens em cada via vai ser a 
+    # quantidade de viagens encontrada no trecho com maior numero de viagens
+    # daquela via
+    summarise(trips_sum = max(trips_sum, na.rm = TRUE))
+  
+  
+  return(osm_od_ok_group)
+    
 }
 
 od_weekday_peak_group_vias <- intersecao_od_osm(od_weekday_peak_group)
 od_weekday_offpeak_group_vias <- intersecao_od_osm(od_weekday_offpeak_group)
 od_weekend_group_vias <- intersecao_od_osm(od_weekend_group)
+
+file.remove("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_peak.gpkg")
+file.remove("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_offpeak.gpkg")
+file.remove("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekend.gpkg")
 
 st_write(od_weekday_peak_group_vias,    "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_peak.gpkg", append = FALSE)
 st_write(od_weekday_offpeak_group_vias, "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_offpeak.gpkg", append = FALSE)
