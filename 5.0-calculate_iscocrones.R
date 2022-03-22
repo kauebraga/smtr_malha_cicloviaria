@@ -45,6 +45,8 @@ ttmatrix_bike[points, on = c("toId" = "id"),
 
 # save
 fwrite(ttmatrix_bike, "../../data/smtr_malha_cicloviaria/ttmatrix_iso_bike.csv")
+ttmatrix_bike <- fread("../../data/smtr_malha_cicloviaria/ttmatrix_iso_bike.csv")
+
 
 
 # osm_id1 <- "15807931"
@@ -58,37 +60,41 @@ iso_osm_id <- function(osm_id1) {
   points_osm_id <- st_as_sf(points_osm_id, coords = c("lon", "lat"), crs = 4326)
   # mapview(points_osm_id)
   # st_as_sfc(st_bbox(points_osm_id)) %>% mapview() + points_osm_id
-  iso <- st_as_sfc(st_bbox(points_osm_id), crs = 4326)
+  # iso <- st_as_sfc(st_bbox(points_osm_id), crs = 4326)
   
   # construct polygon after these points
   
   # para cada pontinho, pegar os 3 mais longes?
   
   # variables <- 1
-  # iso_pontinho <- function(variables) {
-  #   
-  #   points_osm_id_pontinho <- points_osm_id[id == variables]
-  #   iso_osm_pontinho <- sfheaders::sf_polygon(points_osm_id_pontinho, x = "lon", y= "lat")
-  #   mapview(iso_osm_pontinho)
-  #   
-  #   
-  #   library(stars)
-  #   iso_osm_pontinho_star <- stars::st_as_stars(iso_osm_pontinho)
-  #   st_contour(iso_osm_pontinho_star)
-  #   
-  #   iso_osm_pontinho <- st_as_sf(points_osm_id_pontinho, coords = c("lon", "lat"), crs = 4326)
-  #   mapview(iso_osm_pontinho)
-  #   iso_osm_pontinho_hux <- st_convex_hull(iso_osm_pontinho)
-  #   mapview(iso_osm_pontinho_hux)
-  #   
-  # }
+  iso_pontinho <- function(variables) {
+
+    points_osm_id_pontinho <- points_osm_id %>% filter(id == variables)
+    iso <- st_as_sfc(st_bbox(points_osm_id_pontinho), crs = 4326)
+    # mapview(iso)
+    # plot(iso)
+    # iso_osm_pontinho <- sfheaders::sf_polygon(points_osm_id_pontinho, x = "lon", y= "lat")
+    # mapview(iso_osm_pontinho)
+    # 
+    # 
+    # library(stars)
+    # iso_osm_pontinho_star <- stars::st_as_stars(iso_osm_pontinho)
+    # st_contour(iso_osm_pontinho_star)
+    # 
+    # iso_osm_pontinho <- st_as_sf(points_osm_id_pontinho, coords = c("lon", "lat"), crs = 4326)
+    # mapview(iso_osm_pontinho)
+    # iso_osm_pontinho_hux <- st_convex_hull(iso_osm_pontinho)
+    # mapview(iso_osm_pontinho_hux)
+
+  }
+  
+  iso_todos <- lapply(points_osm_id$id, iso_pontinho)
+  a <- do.call(c, iso_todos)
+  a <- sf::st_union(a)
+  b <- data.frame(osm_id = osm_id1)
+  st_geometry(b) <- a
   
 }
-
-iso_todos <- lapply(unique(cenario_points_coords$osm_id), iso_osm_id)
-a <- do.call(c, iso_todos)
-b <- data.frame(osm_id = unique(cenario_points_coords$osm_id))
-st_geometry(b) <- a
 
 
 plot(b)
