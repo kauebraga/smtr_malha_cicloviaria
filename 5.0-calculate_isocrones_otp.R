@@ -11,7 +11,7 @@ cenario1 <- st_read("../../data/smtr_malha_cicloviaria/4-osm_cenarios/osm_cenari
 
 # break scenario in points every 20 meters
 # standardize shape resolution - at least every 20 meters
-cenario_points <- st_segmentize(cenario1, dfMaxLength = 100)
+cenario_points <- st_segmentize(cenario1, dfMaxLength = 50)
 # shapes_linhas_filter <- sfheaders::sf_cast(shapes_linhas_filter, "POINT")
 # transform to lon lat - these points will be the origins
 cenario_points_coords <- sfheaders::sf_to_df(cenario_points, fill = TRUE) %>% 
@@ -38,11 +38,11 @@ otp_rio <- otp_connect(router = "rio")
 # class(otp_rio) <- "otpconnect"
 
 # apply function
-a <- opentripplanner::otp_isochrone(otpcon = otp_rio,
-                                    fromPlace = c(-43.67406, -22.8927),
-                                    mode = "WALK",
-                                    # dist = c(1000, 2000, 3000),
-                                    cutoffSec = 300)
+# a <- opentripplanner::otp_isochrone(otpcon = otp_rio,
+#                                     fromPlace = c(-43.67406, -22.8927),
+#                                     mode = "WALK",
+#                                     # dist = c(1000, 2000, 3000),
+#                                     cutoffSec = 300)
 # 
 # mapview::mapview(a)
 
@@ -76,6 +76,7 @@ a <- my_iso(coords_list,
             connection = otp_rio)
 
 readr::write_rds(a, "iso_otp_cenario1.rds")
+a <- readr::read_rds("iso_otp_cenario1.rds")
 
 
 # trazer osm_id
@@ -88,5 +89,18 @@ a1<- a %>%
 a1 <- a1 %>% st_make_valid()
 
 # oi <- a1 %>% group_by(osm_id) %>% summarise()
-oi <- aggregate(a1, by = list(a1$osm_id), FUN = mean)
+oi <- aggregate(a1, by = list(a1$osm_id), FUN = first)
 
+cenario_unique <- cenario1 %>% 
+  st_set_geometry(NULL) %>%
+  distinct(osm_id, name, highway, cenario, fase, Rota, trips_sum) 
+
+# bring vars
+oi1 <- oi %>%
+  left_join(cenario_unique, by = "osm_id")
+
+# quantos segmentos nao foram estimados?
+setdiff(cenario1$osm_id, oi1$osm_id) # pouquissimmos
+
+# save
+readr::write_rds(oi1, "iso_otp_cenario1_final.rds")

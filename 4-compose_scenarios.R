@@ -5,7 +5,7 @@ library(mapview)
 library(leaflet)
 library(Hmisc)
 sf::sf_use_s2(FALSE)
-mapviewOptions(fgb = TRUE)
+mapviewOptions(fgb = FALSE)
 
 # abrir cenarios
 cenario1 <- st_read("../../data/smtr_malha_cicloviaria/3-osm_malha/osm_malha_atual.gpkg")

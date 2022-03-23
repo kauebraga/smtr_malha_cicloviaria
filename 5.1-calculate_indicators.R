@@ -36,9 +36,14 @@ table(hex$NOME_RP, useNA = "always")
 
 calculate_buffer <- function(cenario) {
   
-  cenario_buffer <- st_transform(cenario, crs = 31983)
-  cenario_buffer <- st_buffer(cenario_buffer, dist = 300)
-  cenario_buffer <- st_transform(cenario_buffer, crs = 4326)
+  # cenario_buffer_old <- st_transform(cenario, crs = 31983)
+  # cenario_buffer_old <- st_buffer(cenario_buffer_old, dist = 300)
+  # cenario_buffer_old <- st_transform(cenario_buffer_old, crs = 4326)
+  
+  cenario_buffer <- readr::read_rds("iso_otp_cenario1_final.rds")
+  
+  # mapview(cenario_buffer %>% filter(osm_id == 116701312)) + 
+  #   cenario_buffer_old %>% filter(osm_id == 116701312)
   
   # combine isocronas
   cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer)) %>% mutate(cenario = unique(cenario_buffer$cenario))
@@ -87,20 +92,22 @@ calculate_buffer <- function(cenario) {
     st_set_geometry(NULL) %>%
     group_by(sigla_muni, NOME_RP, cenario) %>%
     summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE))))
-    
-  a_combine %>%
-    filter(NOME_RP == "Bangu") %>%
-    group_by(sigla_muni, NOME_RP, cenario) %>%
-    summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE)))) %>%
-    mapview() +
-    filter(regioes, NOME_RP == "Bangu")
-    
-  a_combine %>%
-    filter(NOME_RP == "Campo Grande") %>%
-    group_by(sigla_muni, NOME_RP, cenario) %>%
-    summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE)))) %>%
-    mapview() +
-    filter(regioes, NOME_RP == "Campo Grande")
+  
+  # a_combine %>%
+  #   filter(NOME_RP == "Bangu") %>%
+  #   group_by(sigla_muni, NOME_RP, cenario) %>%
+  #   summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE)))) %>%
+  #   mapview() +
+  #   filter(regioes, NOME_RP == "Bangu") + 
+  #   cenario1
+  #   
+  # a_combine %>%
+  #   filter(NOME_RP == "Madureira") %>%
+  #   group_by(sigla_muni, NOME_RP, cenario) %>%
+  #   summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE)))) %>%
+  #   mapview() +
+  #   filter(regioes, NOME_RP == "Madureira")+
+  # cenario1
   
   
   return(list(buffer_cenario = a1, buffer_cenario_combine = a1_combine, buffer_cenario_combine_regioes = a1_combine_regiao))
