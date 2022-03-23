@@ -7,16 +7,16 @@ library(leaflet)
 library(kauetools)
 library(aopdata)
 sf::sf_use_s2(FALSE)
-mapviewOptions(fgb = TRUE)
+mapviewOptions(fgb = FALSE)
 # mapviewOptions(platform = "mapdeck")
 # mapviewOptions(platform = "leafgl")
 # mapdeck::set_token(fread("../../data/mapbox_key.csv")$key)
 
 
 # open cenarios
-cenario1 <- st_read("../../data/smtr_malha_cicloviaria/4-osm_cenarios/osm_cenario1.gpkg") %>% mutate(cenario = "cenario1")
-cenario2 <- st_read("../../data/smtr_malha_cicloviaria/4-osm_cenarios/osm_cenario2.gpkg")  %>% mutate(cenario = "cenario2")
-cenario3 <- st_read("../../data/smtr_malha_cicloviaria/4-osm_cenarios/osm_cenario3.gpkg")  %>% mutate(cenario = "cenario3")
+cenario1 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario1_trechos.gpkg") %>% mutate(cenario = "cenario1")
+cenario2 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario2_trechos.gpkg")  %>% mutate(cenario = "cenario2")
+cenario3 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario3_trechos.gpkg")  %>% mutate(cenario = "cenario3")
 
 # mapview(cenario1) + cenario2
 # mapview(cenario2) + cenario3
@@ -30,6 +30,8 @@ regioes <- st_read("../../data-raw/smtr_malha_cicloviaria/regioes_planejamento.g
 # juntar com hex
 hex <- st_join(hex, regioes, largest = TRUE)
 table(hex$NOME_RP, useNA = "always")
+
+hex %>% filter(is.na(NOME_RP)) %>% mapview()
 
 # buffer each cenario
 # cenario <- cenario1
@@ -77,7 +79,9 @@ calculate_buffer <- function(cenario) {
     # summarise(across(starts_with(c("P00", "E00", "S00")), .fns = ~sum(.x * area_prop_hex, na.rm = TRUE)),
     summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE))),
               fase = first(fase),
-              trips_sum = first(trips_sum)) 
+              trips_sum = first(trips_sum))  %>%
+    # trazer geom
+    left_join(select(cenario, osm_id), by = "osm_id")
   
   a1_combine <- a_combine %>%
     st_set_geometry(NULL) %>%
@@ -91,7 +95,9 @@ calculate_buffer <- function(cenario) {
   a1_combine_regiao <- a_combine %>%
     st_set_geometry(NULL) %>%
     group_by(sigla_muni, NOME_RP, cenario) %>%
-    summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE))))
+    summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE)))) %>%
+    # trazer geom
+    left_join(select(regioes, NOME_RP), by = "NOME_RP")
   
   # a_combine %>%
   #   filter(NOME_RP == "Bangu") %>%
@@ -125,14 +131,25 @@ cenario3_socio <- calculate_buffer(cenario3)
 # cenario1_socio$buffer_cenario_combine_regioes %>% View()
 
 # juntar
-cenarios_socio <- list(cenario1_socio, cenario2_socio, cenario3_socio)
+cenarios_socio <- list(cenario1_socio)
+# cenarios_socio <- list(cenario1_socio, cenario2_socio, cenario3_socio)
 cenarios_socio <- purrr::transpose(cenarios_socio)
 cenarios_socio <- lapply(cenarios_socio, rbindlist)
 
-cenarios_socio$buffer_cenario_combine
-cenarios_socio$buffer_cenario %>% View()
+# save
+cenarios_socio[[1]] %>% View()
+  st_sf() %>%
+  st_write("../../data/smtr_malha_cicloviaria/5-indicators/bike_indicators_trechos.gpkg")
+
+cenarios_socio[[2]] %>% 
+  fwrite("../../data/smtr_malha_cicloviaria/5-indicators/bike_indicators_city.csv")
+
+cenarios_socio[[3]] %>% st_sf() %>%
+  st_write("../../data/smtr_malha_cicloviaria/5-indicators/bike_indicators_regioes.gpkg")
 
 
-# check only fase 3
-a <- cenarios_socio$buffer_cenario %>%
-  filter(fase == "fase3")
+
+# checks
+sum(cenarios_socio[[1]]$pop_total)
+sum(cenarios_socio[[2]]$pop_total)
+sum(cenarios_socio[[3]]$pop_total)

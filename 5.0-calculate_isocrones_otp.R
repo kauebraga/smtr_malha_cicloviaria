@@ -5,9 +5,14 @@ library(data.table)
 library(sf)
 library(purrr)
 library(mapview)
+mapviewOptions(fgb = FALSE)
 
 # open scenario
-cenario1 <- st_read("../../data/smtr_malha_cicloviaria/4-osm_cenarios/osm_cenario1.gpkg") %>% mutate(cenario = "cenario1")
+cenario1 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario1_trechos.gpkg") %>% mutate(cenario = "cenario1")
+cenario1_raw <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_atual/Malha_Final_Existente_20220318.geojson") %>%
+  mutate(OBJECTID = 1:n()) %>% select(OBJECTID, Rota) %>% st_zm(.) %>% mutate(cenario = "cenario1", fase = "fase1")
+# delete emty
+cenario1_raw <- cenario1_raw %>% filter(!st_is_empty(.))
 
 # break scenario in points every 20 meters
 # standardize shape resolution - at least every 20 meters
@@ -17,6 +22,16 @@ cenario_points <- st_segmentize(cenario1, dfMaxLength = 50)
 cenario_points_coords <- sfheaders::sf_to_df(cenario_points, fill = TRUE) %>% 
   mutate(id = 1:n()) %>%
   select(id, osm_id, name, highway, fase, cenario, lon = x, lat = y) %>%
+  setDT()
+
+# break scenario in points every 20 meters
+# standardize shape resolution - at least every 20 meters
+cenario_raw_points <- st_segmentize(cenario1_raw, dfMaxLength = 50)
+# shapes_linhas_filter <- sfheaders::sf_cast(shapes_linhas_filter, "POINT")
+# transform to lon lat - these points will be the origins
+cenario_raw_points_coords <- sfheaders::sf_to_df(cenario_raw_points, fill = TRUE) %>% 
+  mutate(id = 1:n()) %>%
+  select(id, OBJECTID, fase, cenario, lon = x, lat = y) %>%
   setDT()
 
 # build graph
@@ -49,6 +64,9 @@ otp_rio <- otp_connect(router = "rio")
 coords_list <- purrr::map2(as.numeric(cenario_points_coords$lon), as.numeric(cenario_points_coords$lat), c)
 coords_list <- matrix(c(cenario_points_coords$lon, cenario_points_coords$lat), ncol = 2)
 
+coords_raw_list <- purrr::map2(as.numeric(cenario_raw_points_coords$lon), as.numeric(cenario_raw_points_coords$lat), c)
+coords_raw_list <- matrix(c(cenario_raw_points_coords$lon, cenario_raw_points_coords$lat), ncol = 2)
+
 my_iso <- function(coords, id = NULL, time, mode1, connection) {
   
   otp_isochrone(otpcon = connection,
@@ -75,8 +93,14 @@ a <- my_iso(coords_list,
             mode1 = "WALK",
             connection = otp_rio)
 
-readr::write_rds(a, "iso_otp_cenario1.rds")
-a <- readr::read_rds("iso_otp_cenario1.rds")
+a_raw <- my_iso(coords_raw_list,
+            id = cenario_raw_points_coords$id,
+            time = c(300), # default walkspeed is 1.333 m/s, so time for 500 meters is 500/1.33 = 376 secs
+            mode1 = "WALK",
+            connection = otp_rio)
+
+readr::write_rds(a, "../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_cenario1.rds")
+a <- readr::read_rds("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_cenario1.rds")
 
 
 # trazer osm_id
@@ -103,4 +127,4 @@ oi1 <- oi %>%
 setdiff(cenario1$osm_id, oi1$osm_id) # pouquissimmos
 
 # save
-readr::write_rds(oi1, "iso_otp_cenario1_final.rds")
+readr::write_rds(oi1, "../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_cenario1_group.rds")

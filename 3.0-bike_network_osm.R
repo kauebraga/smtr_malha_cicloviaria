@@ -8,12 +8,13 @@ library(mapview)
 library(leaflet)
 # library(mapdeck)
 sf::sf_use_s2(FALSE)
-mapviewOptions(fgb = TRUE)
+mapviewOptions(fgb = FALSE)
 
 
 # open bike network ------------
 bike_network_now <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_atual/Malha_Final_Existente_20220318.geojson") %>%
-  select(OBJECTID = AP, Rota) %>% st_zm(.) %>% mutate(fase = "fase1")
+  mutate(OBJECTID = 1:n()) %>%
+  select(OBJECTID, Rota) %>% st_zm(.) %>% mutate(fase = "fase1")
 st_geometry(bike_network_now) = "geom"
 bike_network_planejada <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_planejada/bike_network_planejada.gpkg")
 bike_network_planejada <- st_zm(bike_network_planejada) %>% select(OBJECTID, Rota = Name) %>% mutate(fase = "fase2")
@@ -29,6 +30,11 @@ osm_rio_vias <- osm_rio_vias %>% filter(highway %in% c("primary", "secondary", "
                                                        "unclassified", "living_street", "pedestrian",
                                                        "trunk_link", "primary_link", "secondary_link", "tertiary_link", 
                                                        "motorway", "cycleway"))
+
+osm_rio_vias %>%
+  filter(name %ilike% "mato alto") %>% mapview() + bike_network_now
+
+
 # export
 file.remove("../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg")
 st_write(osm_rio_vias, "../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg", append = FALSE)
@@ -61,8 +67,11 @@ intersecao_bike_osm <- function(bike_network) {
     # calculate percentage
     mutate(percent_piece_intersect = as.numeric(length_piece_intersect) / as.numeric(length_osm))
   
-  
-  
+  # a <- od_group_vias %>%
+  #   filter(name %ilike% "mato alto")
+  # 
+  # bike_network_now %>% filter(OBJECTID %in% c(9, 46, 47)) %>% mapview()
+  # 
   # leaflet() %>%
   #   addProviderTiles(providers$CartoDB.Positron) %>%
   #   addPolylines(data = od_group_vias, color = "red") %>%
@@ -77,7 +86,7 @@ intersecao_bike_osm <- function(bike_network) {
   # regra: tem que ter pelo menos 50m e 70% de intersecao do pedaco do trecho com o segmento do OSM para considerar
   # aquele segmento do OSM
   od_group_vias <- od_group_vias %>% mutate(ok = ifelse(length_piece_intersect > 100 & percent_piece_intersect > 0.4, TRUE,
-                                                        ifelse(length_piece_intersect > 20 & percent_piece_intersect > 0.9, TRUE,
+                                                        ifelse(length_piece_intersect > 15 & percent_piece_intersect > 0.9, TRUE,
                                                                ifelse(length_piece_intersect > 50 & percent_piece_intersect > 0.6, TRUE, FALSE))))
   od_group_vias_ok <- od_group_vias %>% filter(ok)
   
@@ -110,9 +119,9 @@ osm_bike_planejada <- intersecao_bike_osm(bike_network_planejada)
 
 
 # save
-file.remove("../../data/smtr_malha_cicloviaria/3-osm_malha/osm_malha_atual.gpkg")
-file.remove("../../data/smtr_malha_cicloviaria/3-osm_malha/osm_malha_planejada.gpkg")
-st_write(osm_bike_now,       "../../data/smtr_malha_cicloviaria/3-osm_malha/osm_malha_atual.gpkg", append = FALSE)
-st_write(osm_bike_planejada, "../../data/smtr_malha_cicloviaria/3-osm_malha/osm_malha_planejada.gpkg", append = FALSE)
+file.remove("../../data/smtr_malha_cicloviaria/3-malha_trechos/malha_atual_trechos.gpkg")
+file.remove("../../data/smtr_malha_cicloviaria/3-malha_trechos/malha_planejada_trechos.gpkg")
+st_write(osm_bike_now,       "../../data/smtr_malha_cicloviaria/3-malha_trechos/malha_atual_trechos.gpkg", append = FALSE)
+st_write(osm_bike_planejada, "../../data/smtr_malha_cicloviaria/3-malha_trechos/malha_planejada_trechos.gpkg", append = FALSE)
 
 
