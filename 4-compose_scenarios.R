@@ -11,6 +11,11 @@ mapviewOptions(fgb = FALSE)
 cenario1 <- st_read("../../data/smtr_malha_cicloviaria/3-malha_trechos/malha_atual_trechos.gpkg")
 cenario2 <- st_read("../../data/smtr_malha_cicloviaria/3-malha_trechos/malha_planejada_trechos.gpkg")
 
+# group cenario - pode ter osm_id repetido
+cenario1 <- cenario1 %>%
+  group_by(osm_id, name, highway, fase) %>%
+  summarise(OBJECTID = first(OBJECTID), Rota = first(Rota))
+
 # trazer dados de carregamento para cada segmento osm
 od_weekday_peak_group_vias <- st_read("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_peak.gpkg")
 

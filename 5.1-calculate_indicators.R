@@ -31,7 +31,14 @@ regioes <- st_read("../../data-raw/smtr_malha_cicloviaria/regioes_planejamento.g
 hex <- st_join(hex, regioes, largest = TRUE)
 table(hex$NOME_RP, useNA = "always")
 
-hex %>% filter(is.na(NOME_RP)) %>% mapview()
+hex_totals <- hex %>% st_set_geometry(NULL) %>%
+  group_by(sigla_muni) %>%
+  summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~sum(.x, na.rm = TRUE)))
+
+# hex %>% filter(is.na(NOME_RP)) %>% mapview()
+
+# calculate totals
+
 
 # buffer each cenario
 # cenario <- cenario1
@@ -42,26 +49,25 @@ calculate_buffer <- function(cenario) {
   # cenario_buffer_old <- st_buffer(cenario_buffer_old, dist = 300)
   # cenario_buffer_old <- st_transform(cenario_buffer_old, crs = 4326)
   
-  cenario_buffer <- readr::read_rds("iso_otp_cenario1_final.rds")
+  cenario_buffer <- readr::read_rds("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_cenario1_group.rds") %>% st_sf()
+  cenario_buffer_raw <- readr::read_rds("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_cenario1_group_raw.rds") %>% st_sf()
   
   # mapview(cenario_buffer %>% filter(osm_id == 116701312)) + 
   #   cenario_buffer_old %>% filter(osm_id == 116701312)
   
   # combine isocronas
-  cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer)) %>% mutate(cenario = unique(cenario_buffer$cenario))
-  mapview(cenario_buffer_combine)
+  cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer_raw)) %>% mutate(cenario = unique(cenario_buffer$cenario))
+  # mapview(cenario_buffer_combine)
   
-  # group by name
-  cenario_buffer_group <- 
-    
-    # qual a proporcao da area de cada hexagono que esta dentro de uma isocrona?
-    a <- st_intersection(cenario_buffer,
-                         hex) %>%
+  # qual a proporcao da area de cada hexagono que esta dentro de uma isocrona?
+  a <- st_intersection(cenario_buffer,
+                       hex) %>%
     # calcular a area do pedaco
     mutate(pedaco_area = st_area(.)) %>%
     # calcular a proporcao da area total do hex que esta dentro da isocrona
     mutate(area_prop_hex = as.numeric(pedaco_area) / as.numeric(hex_area))
   
+  # para a malha como um todo
   a_combine <- st_intersection(cenario_buffer_combine,
                                hex) %>%
     # calcular a area do pedaco
@@ -78,8 +84,9 @@ calculate_buffer <- function(cenario) {
     # https://stackoverflow.com/questions/45947787/create-new-variables-with-mutate-at-while-keeping-the-original-ones/45947867#45947867
     # summarise(across(starts_with(c("P00", "E00", "S00")), .fns = ~sum(.x * area_prop_hex, na.rm = TRUE)),
     summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE))),
-              fase = first(fase),
-              trips_sum = first(trips_sum))  %>%
+              fase = first(fase)
+              # trips_sum = first(trips_sum)
+    )  %>%
     # trazer geom
     left_join(select(cenario, osm_id), by = "osm_id")
   
@@ -89,15 +96,37 @@ calculate_buffer <- function(cenario) {
     # multiplcar a area proporcional pela variavel do setor
     # https://stackoverflow.com/questions/45947787/create-new-variables-with-mutate-at-while-keeping-the-original-ones/45947867#45947867
     # summarise(across(starts_with(c("P00", "E00", "S00")), .fns = ~sum(.x * area_prop_hex, na.rm = TRUE)))
-    summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE))))
+    summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE)))) %>%
+    ungroup() %>% 
+    mutate(tipo = "total") %>%
+    setDT()
+  # mutate(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~round(.x / hex_totals$.x)))
+  
+  # calcular proporcoes
+  a1_combine_prop <- 
+    purrr::map2_dfr(select(a1_combine, pop_total:saude_alta), select(hex_totals, pop_total:saude_alta),
+                    function(x, y) round((x / y) * 100, 2)) %>% mutate(tipo = "proporcao") %>% setDT()
+    
+  # bind
+  a1_combine <- rbind(a1_combine, a1_combine_prop, fill = TRUE)
   
   # by regiao
   a1_combine_regiao <- a_combine %>%
     st_set_geometry(NULL) %>%
     group_by(sigla_muni, NOME_RP, cenario) %>%
     summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE)))) %>%
+    mutate(tipo = "total") %>%
+    setDT()
+  
+  # calcular proporcoes
+  a1_combine_regiao_prop <- 
+    purrr::map2_dfr(select(a1_combine_regiao, pop_total:saude_alta), select(hex_totals, pop_total:saude_alta),
+                    function(x, y) round((x / y)*100, 2)) %>% mutate(tipo = "proporcao") %>% setDT()
+  # bind
+  a1_combine <- rbind(a1_combine_regiao, a1_combine_regiao_prop, fill = TRUE) %>%
     # trazer geom
-    left_join(select(regioes, NOME_RP), by = "NOME_RP")
+    left_join(select(regioes, NOME_RP), by = "NOME_RP") 
+  
   
   # a_combine %>%
   #   filter(NOME_RP == "Bangu") %>%
@@ -137,15 +166,15 @@ cenarios_socio <- purrr::transpose(cenarios_socio)
 cenarios_socio <- lapply(cenarios_socio, rbindlist)
 
 # save
-cenarios_socio[[1]] %>% View()
+cenarios_socio[[1]] %>% 
   st_sf() %>%
-  st_write("../../data/smtr_malha_cicloviaria/5-indicators/bike_indicators_trechos.gpkg")
+  st_write("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_trechos.gpkg")
 
 cenarios_socio[[2]] %>% 
-  fwrite("../../data/smtr_malha_cicloviaria/5-indicators/bike_indicators_city.csv")
+  fwrite("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_city.csv")
 
 cenarios_socio[[3]] %>% st_sf() %>%
-  st_write("../../data/smtr_malha_cicloviaria/5-indicators/bike_indicators_regioes.gpkg")
+  st_write("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_regioes.gpkg")
 
 
 
