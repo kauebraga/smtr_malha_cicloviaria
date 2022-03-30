@@ -121,9 +121,10 @@ calculate_buffer <- function(cenario) {
   # calcular proporcoes
   a1_combine_regiao_prop <- 
     purrr::map2_dfr(select(a1_combine_regiao, pop_total:saude_alta), select(hex_totals, pop_total:saude_alta),
-                    function(x, y) round((x / y)*100, 2)) %>% mutate(tipo = "proporcao") %>% setDT()
+                    function(x, y) round((x / y)*100, 2)) %>% 
+    mutate(NOME_RP = a1_combine_regiao$NOME_RP, cenario = 'cenario1', tipo = "proporcao") %>% setDT()
   # bind
-  a1_combine <- rbind(a1_combine_regiao, a1_combine_regiao_prop, fill = TRUE) %>%
+  a1_combine_regiao <- rbind(a1_combine_regiao, a1_combine_regiao_prop, fill = TRUE) %>%
     # trazer geom
     left_join(select(regioes, NOME_RP), by = "NOME_RP") 
   

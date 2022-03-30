@@ -9,7 +9,7 @@ mapviewOptions(fgb = FALSE)
 
 # open scenario
 cenario1 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario1_trechos.gpkg") %>% mutate(cenario = "cenario1")
-cenario1_raw <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_atual/Malha_Final_Existente_20220318.geojson") %>%
+cenario1_raw <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_atual/Rede_Existente_Final_20220325.geojson") %>%
   mutate(OBJECTID = 1:n()) %>% select(OBJECTID, Rota) %>% st_zm(.) %>% mutate(cenario = "cenario1", fase = "fase1")
 # delete emty
 cenario1_raw <- cenario1_raw %>% filter(!st_is_empty(.))

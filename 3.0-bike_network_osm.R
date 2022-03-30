@@ -12,7 +12,7 @@ mapviewOptions(fgb = FALSE)
 
 
 # open bike network ------------
-bike_network_now <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_atual/Malha_Final_Existente_20220318.geojson") %>%
+bike_network_now <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_atual/Rede_Existente_Final_20220325.geojson") %>%
   mutate(OBJECTID = 1:n()) %>%
   select(OBJECTID, Rota) %>% st_zm(.) %>% mutate(fase = "fase1")
 st_geometry(bike_network_now) = "geom"
@@ -31,8 +31,8 @@ osm_rio_vias <- osm_rio_vias %>% filter(highway %in% c("primary", "secondary", "
                                                        "trunk_link", "primary_link", "secondary_link", "tertiary_link", 
                                                        "motorway", "cycleway"))
 
-osm_rio_vias %>%
-  filter(name %ilike% "mato alto") %>% mapview() + bike_network_now
+# osm_rio_vias %>%
+  # filter(name %ilike% "mato alto") %>% mapview() + bike_network_now
 
 
 # export
