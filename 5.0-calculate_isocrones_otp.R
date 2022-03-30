@@ -14,7 +14,7 @@ cenario1_raw <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_atua
 # delete emty
 cenario1_raw <- cenario1_raw %>% filter(!st_is_empty(.))
 
-mapview(cenario1) + cenario1_raw
+# mapview(cenario1) + cenario1_raw
 
 # break scenario in points every 20 meters
 # standardize shape resolution - at least every 20 meters
@@ -81,7 +81,7 @@ my_iso <- function(coords, id = NULL, time, mode1, connection) {
                 fromID = id,
                 cutoffSec = time,
                 mode = mode1,
-                ncores = 4,
+                ncores = 10,
                 routingOptions = routingOptions
   )
   

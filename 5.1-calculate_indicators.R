@@ -105,7 +105,8 @@ calculate_buffer <- function(cenario) {
   # calcular proporcoes
   a1_combine_prop <- 
     purrr::map2_dfr(select(a1_combine, pop_total:saude_alta), select(hex_totals, pop_total:saude_alta),
-                    function(x, y) round((x / y) * 100, 2)) %>% mutate(tipo = "proporcao") %>% setDT()
+                    function(x, y) round((x / y) * 100, 2)) %>% mutate(sigla_muni = "rio", cenario = "cenario1", 
+                                                                       tipo = "proporcao") %>% setDT()
     
   # bind
   a1_combine <- rbind(a1_combine, a1_combine_prop, fill = TRUE)
@@ -122,7 +123,8 @@ calculate_buffer <- function(cenario) {
   a1_combine_regiao_prop <- 
     purrr::map2_dfr(select(a1_combine_regiao, pop_total:saude_alta), select(hex_totals, pop_total:saude_alta),
                     function(x, y) round((x / y)*100, 2)) %>% 
-    mutate(NOME_RP = a1_combine_regiao$NOME_RP, cenario = 'cenario1', tipo = "proporcao") %>% setDT()
+    mutate(NOME_RP = a1_combine_regiao$NOME_RP, sigla_muni = "rio", cenario = "cenario1", 
+           tipo = "proporcao") %>% setDT()
   # bind
   a1_combine_regiao <- rbind(a1_combine_regiao, a1_combine_regiao_prop, fill = TRUE) %>%
     # trazer geom
@@ -167,14 +169,15 @@ cenarios_socio <- purrr::transpose(cenarios_socio)
 cenarios_socio <- lapply(cenarios_socio, rbindlist)
 
 # save
-cenarios_socio[[1]] %>% 
+cenarios_socio[[1]] %>% View()
   st_sf() %>%
   st_write("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_trechos.gpkg")
 
-cenarios_socio[[2]] %>% 
+cenarios_socio[[2]] %>% View()
   fwrite("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_city.csv")
 
-cenarios_socio[[3]] %>% st_sf() %>%
+cenarios_socio[[3]] %>% View() %>%
+  st_sf() %>%
   st_write("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_regioes.gpkg")
 
 
