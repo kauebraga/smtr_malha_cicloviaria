@@ -48,10 +48,14 @@ hex_totals_regioes <- hex %>% st_set_geometry(NULL) %>%
 # hex %>% filter(is.na(NOME_RP)) %>% mapview()
 
 # abir estacoes
-estacoes <- st_read("../../data-raw/smtr_malha_cicloviaria/estacoes_capacidade_ITDP/estacoes_2019.shp") %>%
-  filter(City == "Rio de Janeiro", Status == "Operational") %>%
+estacoes <- geojsonsf::geojson_sf("../../data-raw/smtr_malha_cicloviaria/Estacoes_mediaalta_transporte.geojson") %>%
   mutate(sigla_muni = "rio") %>%
-  select(sigla_muni, Station)
+  select(sigla_muni, Station = Nome)
+estacoes <- st_zm(estacoes)
+# estacoes <- st_read("../../data-raw/smtr_malha_cicloviaria/estacoes_capacidade_ITDP/estacoes_2019.shp") %>%
+#   filter(City == "Rio de Janeiro", Status == "Operational") %>%
+#   mutate(sigla_muni = "rio") %>%
+#   select(sigla_muni, Station)
 
 # juntar com regioes
 estacoes <- st_join(estacoes, regioes)
