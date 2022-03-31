@@ -26,14 +26,23 @@ cenario3 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenari
 hex <- readr::read_rds("../../data-raw/smtr_malha_cicloviaria/hex_agregado_rio_09.rds") %>%
   mutate(hex_area = st_area(.)) %>% mutate(sigla_muni = "rio")
 # identificar a regiao de cada hex
-regioes <- st_read("../../data-raw/smtr_malha_cicloviaria/regioes_planejamento.geojson") %>% select(NOME_RP)
+regioes <- st_read("../../data-raw/smtr_malha_cicloviaria/regioes_planejamento.geojson") %>% select(NOME_RP, AP, RP)
 # juntar com hex
 hex <- st_join(hex, regioes, largest = TRUE)
+hex <- hex %>% filter(!is.na(NOME_RP))
 table(hex$NOME_RP, useNA = "always")
+
+# mapview(hex %>% filter(is.na(NOME_RP)))
 
 hex_totals <- hex %>% st_set_geometry(NULL) %>%
   group_by(sigla_muni) %>%
-  summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~sum(.x, na.rm = TRUE)))
+  summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~sum(.x, na.rm = TRUE))) %>%
+  ungroup()
+
+hex_totals_regioes <- hex %>% st_set_geometry(NULL) %>%
+  group_by(sigla_muni, NOME_RP) %>%
+  summarise(across(starts_with(c("pop_", "cor_", "edu_", "saude_")), .fns = ~sum(.x, na.rm = TRUE))) %>%
+  ungroup()
 
 # hex %>% filter(is.na(NOME_RP)) %>% mapview()
 
@@ -107,7 +116,7 @@ calculate_buffer <- function(cenario) {
     purrr::map2_dfr(select(a1_combine, pop_total:saude_alta), select(hex_totals, pop_total:saude_alta),
                     function(x, y) round((x / y) * 100, 2)) %>% mutate(sigla_muni = "rio", cenario = "cenario1", 
                                                                        tipo = "proporcao") %>% setDT()
-    
+  
   # bind
   a1_combine <- rbind(a1_combine, a1_combine_prop, fill = TRUE)
   
@@ -119,16 +128,54 @@ calculate_buffer <- function(cenario) {
     mutate(tipo = "total") %>%
     setDT()
   
+  # deletar na
+  a1_combine_regiao <- a1_combine_regiao[!is.na(NOME_RP)]
+  
+  # adicionar alguma regiao q esteja faltando
+  dif_regiao <- setdiff(hex$NOME_RP, a1_combine_regiao$NOME_RP)
+  
+  # add
+  a1_combine_regiao <- rbind(a1_combine_regiao,
+                             data.table(sigla_muni = "rio", NOME_RP = dif_regiao, cenario = "cenario1", tipo = "total"),
+                             fill = TRUE)
+  
+  a1_combine_regiao <- arrange(a1_combine_regiao, NOME_RP)
+  
   # calcular proporcoes
   a1_combine_regiao_prop <- 
-    purrr::map2_dfr(select(a1_combine_regiao, pop_total:saude_alta), select(hex_totals, pop_total:saude_alta),
+    purrr::map2_dfr(select(arrange(a1_combine_regiao, NOME_RP), pop_total:saude_alta), 
+                    select(hex_totals_regioes, pop_total:saude_alta),
                     function(x, y) round((x / y)*100, 2)) %>% 
-    mutate(NOME_RP = a1_combine_regiao$NOME_RP, sigla_muni = "rio", cenario = "cenario1", 
+    mutate(NOME_RP = a1_combine_regiao$NOME_RP, AP = a1_combine_regiao$AP, RP = a1_combine_regiao$RP, 
+           sigla_muni = "rio", cenario = "cenario1", 
            tipo = "proporcao") %>% setDT()
+  
   # bind
-  a1_combine_regiao <- rbind(a1_combine_regiao, a1_combine_regiao_prop, fill = TRUE) %>%
-    # trazer geom
-    left_join(select(regioes, NOME_RP), by = "NOME_RP") 
+  a1_combine_regiao <- rbind(a1_combine_regiao, a1_combine_regiao_prop, fill = TRUE)
+  
+  # trazer os totais de cada regiao
+  hex_totals_regioes1 <- hex_totals_regioes %>%
+    mutate(cenario = "cenario1", 
+           tipo = "total_RP") %>% setDT()
+  a1_combine_regiao <- rbind(a1_combine_regiao, hex_totals_regioes1)
+  # trazer geom
+  # left_join(regioes %>% select(NOME_RP), by = "NOME_RP") %>%
+  # select(sigla_muni, AP, RP, NOME_RP, tipo,
+  # starts_with(c("pop_", "cor_", "edu_", "saude_")))
+  
+  # trocar NAS por zero
+  a1_combine_regiao[is.na(a1_combine_regiao)] <- 0
+  
+  # trazer pra regiao
+  regioes_fim <- regioes %>%
+    select(AP, RP, NOME_RP) %>%
+    left_join(a1_combine_regiao, by = "NOME_RP")
+  
+  
+  # regioes_fim %>% filter(NOME_RP == "Inhaúma")
+  
+  # mapview(cenario_buffer_raw) + regioes %>% filter(NOME_RP == "Inhaúma")
+  # mapview(cenario_buffer_raw) + regioes %>% filter(NOME_RP == "Centro")
   
   
   # a_combine %>%
@@ -148,7 +195,7 @@ calculate_buffer <- function(cenario) {
   # cenario1
   
   
-  return(list(buffer_cenario = a1, buffer_cenario_combine = a1_combine, buffer_cenario_combine_regioes = a1_combine_regiao))
+  return(list(buffer_cenario = a1, buffer_cenario_combine = a1_combine, buffer_cenario_combine_regioes = regioes_fim))
   
 }
 
@@ -169,15 +216,14 @@ cenarios_socio <- purrr::transpose(cenarios_socio)
 cenarios_socio <- lapply(cenarios_socio, rbindlist)
 
 # save
-cenarios_socio[[1]] %>% View()
+cenarios_socio[[1]] %>% 
   st_sf() %>%
   st_write("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_trechos.gpkg")
 
-cenarios_socio[[2]] %>% View()
+cenarios_socio[[2]] %>% 
   fwrite("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_city.csv")
 
-cenarios_socio[[3]] %>% View() %>%
-  st_sf() %>%
+cenarios_socio[[3]] %>%
   st_write("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_regioes.gpkg")
 
 
