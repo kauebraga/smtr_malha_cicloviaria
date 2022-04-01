@@ -15,8 +15,8 @@ mapviewOptions(fgb = FALSE)
 
 # open cenarios
 cenario1 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario1_trechos.gpkg") %>% mutate(cenario = "cenario1")
-cenario2 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario2_trechos.gpkg")  %>% mutate(cenario = "cenario2")
-cenario3 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario3_trechos.gpkg")  %>% mutate(cenario = "cenario3")
+# cenario2 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario2_trechos.gpkg")  %>% mutate(cenario = "cenario2")
+# cenario3 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario3_trechos.gpkg")  %>% mutate(cenario = "cenario3")
 
 # mapview(cenario1) + cenario2
 # mapview(cenario2) + cenario3
@@ -48,10 +48,13 @@ hex_totals_regioes <- hex %>% st_set_geometry(NULL) %>%
 # hex %>% filter(is.na(NOME_RP)) %>% mapview()
 
 # abir estacoes
-estacoes <- geojsonsf::geojson_sf("../../data-raw/smtr_malha_cicloviaria/Estacoes_mediaalta_transporte.geojson") %>%
+estacoes <- geojsonsf::geojson_sf("../../data-raw/smtr_malha_cicloviaria/Estacoes_mediaalta_transporte.geojson")
+estacoes <- st_zm(estacoes)
+estacoes <- st_set_crs(estacoes, 32723)
+estacoes <- st_transform(estacoes, 4326)
+estacoes <- estacoes %>%
   mutate(sigla_muni = "rio") %>%
   select(sigla_muni, Station = Nome)
-estacoes <- st_zm(estacoes)
 # estacoes <- st_read("../../data-raw/smtr_malha_cicloviaria/estacoes_capacidade_ITDP/estacoes_2019.shp") %>%
 #   filter(City == "Rio de Janeiro", Status == "Operational") %>%
 #   mutate(sigla_muni = "rio") %>%
@@ -153,6 +156,12 @@ calculate_buffer <- function(cenario) {
   # bind
   a1_combine <- rbind(a1_combine, a1_combine_prop)
   
+  # trazer os totais da cidade
+  hex_totals1 <- hex_totals %>%
+    mutate(cenario = "cenario1", 
+           tipo = "total_cidade") %>% setDT()
+  a1_combine <- rbind(a1_combine, hex_totals1)
+  
   # by regiao
   a1_combine_regiao <- a_combine %>%
     st_set_geometry(NULL) %>%
@@ -238,8 +247,8 @@ calculate_buffer <- function(cenario) {
 }
 
 cenario1_socio <- calculate_buffer(cenario1)
-cenario2_socio <- calculate_buffer(cenario2)
-cenario3_socio <- calculate_buffer(cenario3)
+# cenario2_socio <- calculate_buffer(cenario2)
+# cenario3_socio <- calculate_buffer(cenario3)
 
 
 # teste
