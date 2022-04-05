@@ -187,3 +187,4 @@ setdiff(cenario1$osm_id, oi1$osm_id) # pouquissimmos
 # save
 readr::write_rds(cenario1_iso, "../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_cenario1_group.rds")
 readr::write_rds(cenario1_raw_iso, "../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_cenario1_group_raw.rds")
+sf::st_write(cenario1_raw_iso %>% st_sf(), "../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_cenario1_group_raw.gpkg")
