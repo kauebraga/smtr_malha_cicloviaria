@@ -14,8 +14,8 @@ mapviewOptions(fgb = FALSE)
 
 
 # open cenarios
-cenario1 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario1_trechos.gpkg") %>% mutate(cenario = "cenario1")
-# cenario2 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario2_trechos.gpkg")  %>% mutate(cenario = "cenario2")
+# cenario1 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario1_trechos.gpkg") %>% mutate(cenario = "cenario1")
+cenario2 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario2_trechos.gpkg")  %>% mutate(cenario = "cenario2")
 # cenario3 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario3_trechos.gpkg")  %>% mutate(cenario = "cenario3")
 
 # mapview(cenario1) + cenario2
@@ -79,20 +79,23 @@ hex_totals_regioes <- left_join(hex_totals_regioes, estacoes_totals_regioes, by 
 # buffer each cenario
 # cenario <- cenario1
 
+# cenario <- "cenario2" 
+
 calculate_buffer <- function(cenario) {
   
   # cenario_buffer_old <- st_transform(cenario, crs = 31983)
   # cenario_buffer_old <- st_buffer(cenario_buffer_old, dist = 300)
   # cenario_buffer_old <- st_transform(cenario_buffer_old, crs = 4326)
   
-  cenario_buffer <- readr::read_rds("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_cenario1_group.rds") %>% st_sf()
-  cenario_buffer_raw <- readr::read_rds("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_cenario1_group_raw.rds") %>% st_sf()
+  cenario_buffer <- readr::read_rds(  sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group.rds", cenario)) %>% st_sf()
+  cenario_buffer_raw <- readr::read_rds(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group_raw.rds", cenario)) %>%
+    st_sf()
   
   # mapview(cenario_buffer %>% filter(osm_id == 116701312)) + 
   #   cenario_buffer_old %>% filter(osm_id == 116701312)
   
   # combine isocronas
-  cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer_raw)) %>% mutate(cenario = unique(cenario_buffer$cenario))
+  cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer_raw)) %>% mutate(cenario = cenario)
   # mapview(cenario_buffer_combine)
   
   # qual a proporcao da area de cada hexagono que esta dentro de uma isocrona?
@@ -147,10 +150,11 @@ calculate_buffer <- function(cenario) {
   a1_combine <- left_join(a1_combine, a1_combine_estacoes, by = "sigla_muni") %>%
     mutate(tipo = "total")
   
+  
   # calcular proporcoes
   a1_combine_prop <- 
     purrr::map2_dfr(select(a1_combine, pop_total:estacoes_n), select(hex_totals, pop_total:estacoes_n),
-                    function(x, y) round((x / y) * 100, 2)) %>% mutate(sigla_muni = "rio", cenario = "cenario1", 
+                    function(x, y) round((x / y) * 100, 2)) %>% mutate(sigla_muni = "rio", cenario = cenario, 
                                                                        tipo = "proporcao") %>% setDT()
   
   # bind
@@ -173,9 +177,11 @@ calculate_buffer <- function(cenario) {
   dif_regiao <- setdiff(hex$NOME_RP, a1_combine_regiao$NOME_RP)
   
   # add
-  a1_combine_regiao <- rbind(a1_combine_regiao,
-                             data.table(sigla_muni = "rio", NOME_RP = dif_regiao, cenario = "cenario1"),
-                             fill = TRUE)
+  if (length(dif_regiao) > 0) {
+    a1_combine_regiao <- rbind(a1_combine_regiao,
+                               data.table(sigla_muni = "rio", NOME_RP = dif_regiao, cenario = "cenario1"),
+                               fill = TRUE)
+  }
   
   # para estacoes de media/alta capacidade
   a1_combine_estacoes_regiao <- st_join(cenario_buffer_combine,
@@ -194,7 +200,7 @@ calculate_buffer <- function(cenario) {
                     select(hex_totals_regioes, pop_total:estacoes_n),
                     function(x, y) round((x / y)*100, 2)) %>% 
     mutate(NOME_RP = a1_combine_regiao$NOME_RP,
-           sigla_muni = "rio", cenario = "cenario1", 
+           sigla_muni = "rio", cenario = cenario, 
            tipo = "proporcao") %>% setDT()
   
   # bind
@@ -202,7 +208,7 @@ calculate_buffer <- function(cenario) {
   
   # trazer os totais de cada regiao
   hex_totals_regioes1 <- hex_totals_regioes %>%
-    mutate(cenario = "cenario1", 
+    mutate(cenario = cenario, 
            tipo = "total_RP") %>% setDT()
   a1_combine_regiao <- rbind(a1_combine_regiao, hex_totals_regioes1)
   # trazer geom
@@ -267,11 +273,13 @@ cenarios_socio[[1]] %>%
   st_sf() %>%
   st_write("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_trechos.gpkg")
 
-cenarios_socio[[2]] %>% 
-  fwrite("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_city.csv")
+# cenarios_socio[[2]] %>% 
+a1_combine %>%
+  fwrite(sprintf("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_%s_city.csv", cenario))
 
-cenarios_socio[[3]] %>%
-  st_write("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_regioes.gpkg")
+# cenarios_socio[[3]] %>%
+regioes_fim %>%
+  st_write(sprintf("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_%s_regioes.gpkg", cenario))
 
 
 

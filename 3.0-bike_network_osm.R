@@ -16,10 +16,18 @@ bike_network_now <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_
   mutate(OBJECTID = 1:n()) %>%
   select(OBJECTID, Rota) %>% st_zm(.) %>% mutate(fase = "fase1")
 st_geometry(bike_network_now) = "geom"
-bike_network_planejada <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_planejada/bike_network_planejada.gpkg")
-bike_network_planejada <- st_zm(bike_network_planejada) %>% select(OBJECTID, Rota = Name) %>% mutate(fase = "fase2")
-bike_network_planejada <- rbind(bike_network_now, bike_network_planejada)
 
+bike_network_planejada <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_planejada/redefinal_Oficina_v1.geojson") %>%
+  # create ID
+  mutate(OBJECTID = 1:n(), cenario = "cenario2") %>%
+  # create fase
+  mutate(fase = ifelse(status == "existente", "fase1", "fase2")) %>%
+  select(OBJECTID,cenario,  fase, Rota = Trecho)
+# convert to linestring
+# st_cast("LINESTRING")
+# delete emty
+bike_network_planejada <- bike_network_planejada %>% filter(!st_is_empty(.))
+bike_network_planejada <- st_make_valid(bike_network_planejada)
 
 
 # open OSM ------------

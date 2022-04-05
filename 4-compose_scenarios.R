@@ -15,6 +15,9 @@ cenario2 <- st_read("../../data/smtr_malha_cicloviaria/3-malha_trechos/malha_pla
 cenario1 <- cenario1 %>%
   group_by(osm_id, name, highway, fase) %>%
   summarise(OBJECTID = first(OBJECTID), Rota = first(Rota))
+cenario2 <- cenario2 %>%
+  group_by(osm_id, name, highway, fase) %>%
+  summarise(OBJECTID = first(OBJECTID), Rota = first(Rota))
 
 # trazer dados de carregamento para cada segmento osm
 od_weekday_peak_group_vias <- st_read("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_peak.gpkg")
@@ -26,7 +29,7 @@ summary(cenario2$trips_sum)
 
 # trazer os trechos vazios
 osm_bike_vazios <- st_read("../../data/smtr_malha_cicloviaria/3.3-osm_vazios/osm_vazios_planejada_weekday_peak.gpkg") %>%
-  mutate(OBJECTID = NA, Rota = NA, fase = "fase3", faixas = NA) 
+  mutate(OBJECTID = NA, Rota = NA, fase = "fase3") 
 # mapview(osm_bike_vazios)
 
 # juntar esses vazios ao cenario3 para compor o ultimo cenario
