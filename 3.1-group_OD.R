@@ -78,6 +78,10 @@ file.remove("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group.gpkg"
 st_write(od_group, "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group.gpkg")
 
 
+b <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group.gpkg")
+c <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_peak.gpkg")
+
+
 # fwrite(od_group %>% st_set_geometry(NULL),    "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group.csv")
 # fwrite(od_weekday_peak_group %>% st_set_geometry(NULL),    "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_peak.csv")
 # fwrite(od_weekday_offpeak_group %>% st_set_geometry(NULL), "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_offpeak.csv")

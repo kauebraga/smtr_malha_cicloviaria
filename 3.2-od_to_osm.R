@@ -17,18 +17,21 @@ sf::sf_use_s2(FALSE)
 # fazer intersecao da rotas OD com os trechos do OSM ----------------------
 
 # abrir dados viagens de pico de dia da semana
-od_weekday_peak_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_peak.gpkg")
-od_weekday_offpeak_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_offpeak.gpkg")
-od_weekend_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekends.gpkg")
+# od_weekday_peak_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_peak.gpkg")
+# od_weekday_offpeak_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_offpeak.gpkg")
+# od_weekend_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekends.gpkg")
 # mapview(od_weekday_peak_group)
 
 # seria interessante juntar todos esses trechos em um so!
+od_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group.gpkg")
+# excluir pares OD com menos de 30 viagens - 1 por dia
+od_group <- od_group %>% filter(trips_total > 30)
 
 # abrir osm p/ rio
 osm_rio_vias <- st_read("../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg")
 
 
-# od <- od_weekday_peak_group
+# od <- od_group
 
 intersecao_od_osm <- function(od) {
   
@@ -62,36 +65,43 @@ intersecao_od_osm <- function(od) {
     st_set_geometry(NULL) %>%
     # group_by(name, highway) %>%
     group_by(osm_id, name, highway) %>%
-    summarise(trips_sum = sum(trips_n, na.rm = TRUE)) %>%
+    summarise(trips_total = sum(trips_total, na.rm = TRUE),
+              trips_weekday_peak = sum(trips_weekday_peak, na.rm = TRUE),
+              trips_weekday_offpeak = sum(trips_weekday_offpeak, na.rm = TRUE),
+              trips_weekend = sum(trips_weekend, na.rm = TRUE)) %>%
     # trazer geom de volta
     left_join(osm_rio_vias %>% select(osm_id)) %>%
     st_sf(crs = 4326) %>%
-    arrange(desc(trips_sum))
+    arrange(desc(trips_total))
   
-  # por via
-  osm_od_ok_group_group <- osm_od_ok_group %>%
-    group_by(name, highway) %>%
-    # quando agrupar por via, a quantidade de viagens em cada via vai ser a 
-    # quantidade de viagens encontrada no trecho com maior numero de viagens
-    # daquela via
-    summarise(trips_sum = max(trips_sum, na.rm = TRUE))
+  # # por via
+  # osm_od_ok_group_group <- osm_od_ok_group %>%
+  #   group_by(name, highway) %>%
+  #   # quando agrupar por via, a quantidade de viagens em cada via vai ser a 
+  #   # quantidade de viagens encontrada no trecho com maior numero de viagens
+  #   # daquela via
+  #   summarise(trips_sum = max(trips_sum, na.rm = TRUE))
   
   
   return(osm_od_ok_group)
     
 }
 
-od_weekday_peak_group_vias <- intersecao_od_osm(od_weekday_peak_group)
-od_weekday_offpeak_group_vias <- intersecao_od_osm(od_weekday_offpeak_group)
-od_weekend_group_vias <- intersecao_od_osm(od_weekend_group)
+# od_weekday_peak_group_vias <- intersecao_od_osm(od_weekday_peak_group)
+# od_weekday_offpeak_group_vias <- intersecao_od_osm(od_weekday_offpeak_group)
+# od_weekend_group_vias <- intersecao_od_osm(od_weekend_group)
 
-file.remove("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_peak.gpkg")
-file.remove("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_offpeak.gpkg")
-file.remove("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekend.gpkg")
+od_group_vias <- intersecao_od_osm(od_group)
 
-st_write(od_weekday_peak_group_vias,    "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_peak.gpkg", append = FALSE)
-st_write(od_weekday_offpeak_group_vias, "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_offpeak.gpkg", append = FALSE)
-st_write(od_weekend_group_vias,         "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekend.gpkg", append = FALSE)
+
+# a <- st_read("../../../../Downloads/osm_trips_weekday_peak.gpkg")
+
+file.remove("../../data/smtr_malha_cicloviaria/3.2-od_trechos/od_trechos.gpkg")
+st_write(od_group_vias, "../../data/smtr_malha_cicloviaria/3.2-od_trechos/od_trechos.gpkg", append = FALSE)
+
+# st_write(od_weekday_peak_group_vias,    "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_peak.gpkg", append = FALSE)
+# st_write(od_weekday_offpeak_group_vias, "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_offpeak.gpkg", append = FALSE)
+# st_write(od_weekend_group_vias,         "../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekend.gpkg", append = FALSE)
 
 # mapview(od_weekday_peak_group_vias)
 
