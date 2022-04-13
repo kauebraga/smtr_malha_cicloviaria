@@ -8,7 +8,7 @@ library(mapview)
 library(leaflet)
 library(Hmisc)
 # mapviewOptions(platform = "mapdeck")
-mapviewOptions(fgb = TRUE)
+mapviewOptions(fgb = FALSE)
 # mapdeck::set_token(fread("../../data/mapbox_key.csv")$key)
 sf::sf_use_s2(FALSE)
 
@@ -21,6 +21,8 @@ od_weekday_peak_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_gr
 od_weekday_offpeak_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_offpeak.gpkg")
 od_weekend_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekends.gpkg")
 # mapview(od_weekday_peak_group)
+
+# seria interessante juntar todos esses trechos em um so!
 
 # abrir osm p/ rio
 osm_rio_vias <- st_read("../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg")

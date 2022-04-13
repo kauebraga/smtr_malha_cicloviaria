@@ -76,9 +76,9 @@ ttm1_detailed <- detailed_itineraries(r5r_core = r5r_core,
 #                                       max_lts = 4)
 
 # save
-readr::write_rds(ttm1_detailed, "../../data/smtr_malha_cicloviaria/ttmatrix_detailed_rio_bike.rds")
-
+readr::write_rds(ttm1_detailed, "../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_detailed_rio_bike.rds")
+ttm1_detailed <- readr::read_rds("../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_detailed_rio_bike.rds")
 
 # for output
 ttm1_detailed %>% select(-option, -segment, -segment_duration, -wait, -route) %>%
-  st_write("../../data/smtr_malha_cicloviaria/ttmatrix_stations/ttmatrix_stations.geojson")
+  st_write("../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_od.gpkg")

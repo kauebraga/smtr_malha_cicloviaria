@@ -8,7 +8,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, error = FALSE)
 
 library(readr)
 library(dplyr)
@@ -67,8 +67,6 @@ agrupar_od_por_rota <- function(od) {
 od_bike_group <- agrupar_od_por_rota(od_bike)
 
 ```
-
-
 
 ## Quantidade de viagens por dia
 
@@ -137,7 +135,6 @@ write_sheet(data = viagens_estacao,
 
 ```
 
-
 ## Quantidade de viagens por cada par OD
 
 ```{r viagens_par_od}
@@ -149,16 +146,16 @@ od_pico_semana <- od_bike_group %>% filter(day_type == "semana", hour_type == "p
 od_fpico_semana <- od_bike_group %>% filter(day_type == "semana", hour_type == "fora_pico") %>%
   arrange(desc(trips_n))
 # quantidade de viagens diarias por final de semana
-od_fsemana <- od_bike_group %>% filter(day_type == "final_de_semana") %>%
-  group_by(initial_station_name, final_station_name, day_type) %>%
-  summarise(trips_n = sum(trips_n)) %>%
-  arrange(desc(trips_n))
+# od_fsemana <- od_bike_group %>% filter(day_type == "final_de_semana") %>%
+#   group_by(initial_station_name, final_station_name, day_type) %>%
+#   summarise(trips_n = sum(trips_n)) %>%
+#   arrange(desc(trips_n))
 
 st_write(od_pico_semana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_pico_semana.gpkg", append = FALSE)
 
 st_write(od_fpico_semana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_fpico_semana.gpkg", append = FALSE)
 
-st_write(od_fsemana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_fsemana.gpkg")
+# st_write(od_fsemana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_fsemana.gpkg")
 
 # salvar uma amostra no googlesheets
 write_sheet(data = od_pico_semana %>% st_set_geometry(NULL) %>% slice(1:100),
@@ -184,8 +181,6 @@ ggplot()+
 
 ```
 
-
-
 ## Identificando entregadores
 
 ```{r entregadores}
@@ -210,6 +205,8 @@ od_bike_entregadores <- od_bike %>%
   st_as_sf(coords = c("lon", "lat")) %>%
   st_sf(crs = 4326)
 
+st_write(od_bike_entregadores, "../../data/smtr_malha_cicloviaria/explore_od_tembici/od_bike_entregadores.gpkg")
+
 
 ggplot()+
   geom_sf(data = rio_limits, fill = NA)+
@@ -220,10 +217,9 @@ ggplot()+
 
 ```
 
-
 ## Viagens proximo a estacoes de transporte
 
-```{r viagens_estacoes}
+```{r viagens_estacoes1}
 
 
 # abrir estacoes
@@ -254,8 +250,23 @@ od_bike_origem_sf <- od_bike_origem_sf %>%
 od_bike_origem_sf <- od_bike_origem_sf %>%
   mutate(perto_estacao = ifelse(is.na(station_id), "nao", "sim"))
 
-prop.table(table(od_bike_origem_sf$perto_estacao))
+estacoes_origem_transporte <- od_bike_origem_sf %>%
+  st_set_geometry(NULL) %>%
+  filter(perto_estacao == "sim") %>%
+  count(station_id, Station) %>%
+  arrange(desc(n)) %>%
+  # trazer localizacao das estacoes
+  left_join(select(estacoes, station_id), by = "station_id") %>%
+  st_sf(crs = 4326)
 
+
+st_write(estacoes_origem_transporte, "../../data/smtr_malha_cicloviaria/explore_od_tembici/estacoes_origem_transporte.gpkg")
+
+write_sheet(data = estacoes_origem_transporte %>% st_set_geometry(NULL),
+            ss = ss,
+            sheet = "Quantidade perto de estações de transporte")
+
+# prop.table(table(od_bike_origem_sf$perto_estacao))
 
 # viagens de destino 
 od_bike_destino_sf <- od_bike %>% 
@@ -269,7 +280,7 @@ od_bike_destino_sf <- od_bike_destino_sf %>%
 od_bike_destino_sf <- od_bike_destino_sf %>%
   mutate(perto_estacao = ifelse(is.na(station_id), "nao", "sim")) 
 
-prop.table(table(od_bike_destino_sf$perto_estacao))
+# prop.table(table(od_bike_destino_sf$perto_estacao))
 
 # juntar com a matriz original
 od_bike <- od_bike %>%
@@ -283,4 +294,3 @@ prop.table(table(od_bike$perto_estacao))
 
 
 ```
-
