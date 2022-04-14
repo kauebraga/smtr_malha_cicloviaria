@@ -24,14 +24,15 @@ sf::sf_use_s2(FALSE)
 
 # seria interessante juntar todos esses trechos em um so!
 od_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group.gpkg")
-# excluir pares OD com menos de 30 viagens - 1 por dia
-od_group <- od_group %>% filter(trips_total > 30)
+# excluir pares OD com menos de 60 viagens - 1 por dia
+od_group <- od_group %>% filter(trips_total > 60)
 
 # abrir osm p/ rio
 osm_rio_vias <- st_read("../../data/smtr_malha_cicloviaria/2-osm_rio/osm_rio_filter.gpkg")
 
 
 # od <- od_group
+# od <-   od_group %>% filter(initial_station_name == "1 - Central do Brasil", final_station_name == "205 - Praça Barão de Ladário")
 
 intersecao_od_osm <- function(od) {
   
@@ -46,6 +47,8 @@ intersecao_od_osm <- function(od) {
   
   # mapview(od_buffer) + osm_od 
   # mapview(osm_od, zcol = "osm_id") 
+  # mapview(osm_od) + od_buffer + filter(osm_rio_vias, name %like% "Otoni")
+  # mapview(filter(osm_rio_vias, name %like% "Otoni"))
   
   # regra: tem que ter pelo menos 50m e 70% de intersecao do pedaco do trecho com o segmento do OSM para considerar
   # aquele segmento do OSM
@@ -74,6 +77,8 @@ intersecao_od_osm <- function(od) {
     st_sf(crs = 4326) %>%
     arrange(desc(trips_total))
   
+  mapview(osm_od_ok_group)
+  
   # # por via
   # osm_od_ok_group_group <- osm_od_ok_group %>%
   #   group_by(name, highway) %>%
@@ -84,7 +89,7 @@ intersecao_od_osm <- function(od) {
   
   
   return(osm_od_ok_group)
-    
+  
 }
 
 # od_weekday_peak_group_vias <- intersecao_od_osm(od_weekday_peak_group)
