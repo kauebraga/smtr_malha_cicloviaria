@@ -23,7 +23,7 @@ sf::sf_use_s2(FALSE)
 # mapview(od_weekday_peak_group)
 
 # seria interessante juntar todos esses trechos em um so!
-od_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group.gpkg")
+od_group <- st_read("../../data/smtr_malha_cicloviaria/3.1-od_group/trips_group.gpkg")
 # excluir pares OD com menos de 30 viagens - 1 por dia
 od_group <- od_group %>% filter(trips_total > 30)
 
