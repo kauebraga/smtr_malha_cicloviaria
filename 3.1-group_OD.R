@@ -32,7 +32,7 @@ od_bike_weekday <- od_bike[weekday %in% c(1, 2, 3, 4, 5)]
 od_bike_weekend <- od_bike[weekday %in% c(6, 7)]
 
 # fazr pico - fora pco
-od_bike_weekday_peak <- od_bike_weekday[start_hour %in% c(6, 7, 8)]
+od_bike_weekday_peak <- od_bike_weekday[start_hour %in% c(6, 7)]
 od_bike_weekday_offpeak <- od_bike_weekday[start_hour %in% c(14, 15)]
 
 # agrupar OD por rota
