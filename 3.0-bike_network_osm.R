@@ -35,7 +35,7 @@ osm_rio_vias <- readr::read_rds("../../data/smtr_malha_cicloviaria/2-osm_rio/osm
 count(osm_rio_vias %>% st_set_geometry(NULL), highway, sort = TRUE)
 # manter somente certos tipos de highway
 osm_rio_vias <- osm_rio_vias %>% filter(highway %in% c("primary", "secondary", "tertiary", "trunk", "residential", 
-                                                       "unclassified", "living_street", "pedestrian",
+                                                       "unclassified", "living_street", "pedestrian", "service",
                                                        "trunk_link", "primary_link", "secondary_link", "tertiary_link", 
                                                        "motorway", "cycleway"))
 

@@ -20,15 +20,18 @@ cenario2 <- cenario2 %>%
   summarise(OBJECTID = first(OBJECTID), Rota = first(Rota))
 
 # trazer dados de carregamento para cada segmento osm
-od_weekday_peak_group_vias <- st_read("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_peak.gpkg")
+# od_weekday_peak_group_vias <- st_read("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_peak.gpkg")
+od_group_vias <- st_read("../../data/smtr_malha_cicloviaria/3.2-od_trechos/od_trechos.gpkg")
 
 # fazer juncao
-cenario1 <- cenario1 %>% left_join(od_weekday_peak_group_vias %>% select(osm_id, trips_sum) %>% st_set_geometry(NULL))
-cenario2 <- cenario2 %>% left_join(od_weekday_peak_group_vias %>% select(osm_id, trips_sum) %>% st_set_geometry(NULL))
-summary(cenario2$trips_sum)
+cenario1 <- cenario1 %>% 
+  left_join(od_group_vias %>% select(osm_id, trips_total, trips_weekday_peak, trips_weekday_offpeak, trips_weekend) %>% st_set_geometry(NULL))
+cenario2 <- cenario2 %>% 
+  left_join(od_group_vias %>% select(osm_id, trips_total, trips_weekday_peak, trips_weekday_offpeak, trips_weekend) %>% st_set_geometry(NULL))
+summary(cenario2$trips_total)
 
 # trazer os trechos vazios
-osm_bike_vazios <- st_read("../../data/smtr_malha_cicloviaria/3.3-osm_vazios/osm_vazios_planejada_weekday_peak.gpkg") %>%
+osm_bike_vazios <- st_read("../../data/smtr_malha_cicloviaria/3.3-vazios_trechos/od_vazios_trechos.gpkg") %>%
   mutate(OBJECTID = NA, Rota = NA, fase = "fase3") 
 # mapview(osm_bike_vazios)
 
@@ -48,20 +51,3 @@ st_write(cenario1, "../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario
 st_write(cenario2, "../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario2_trechos.gpkg", append = FALSE)
 st_write(cenario3, "../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario3_trechos.gpkg", append = FALSE)
 
-
-# # group by osm name and save
-# cenario1_group <- cenario1 %>%
-#   group_by(name, fase) %>%
-#   summarise(trips_sum = mean(trips_sum, na.rm = TRUE))
-# cenario2_group <- cenario2 %>%
-#   group_by(name, fase) %>%
-#   summarise(trips_sum = mean(trips_sum, na.rm = TRUE))
-# cenario3_group <- cenario3 %>%
-#   group_by(name, fase) %>%
-#   summarise(trips_sum = mean(trips_sum, na.rm = TRUE))
-# 
-# # mapview(cenario1_group)
-# 
-# kauetools::write_data(cenario1_group, "4-osm_cenarios/osm_cenario1_group.gpkg", append = FALSE)
-# kauetools::write_data(cenario2_group, "4-osm_cenarios/osm_cenario2_group.gpkg", append = FALSE)
-# kauetools::write_data(cenario3_group, "4-osm_cenarios/osm_cenario3_group.gpkg", append = FALSE)
