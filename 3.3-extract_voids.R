@@ -11,10 +11,11 @@ sf::sf_use_s2(FALSE)
 mapviewOptions(fgb = FALSE)
 
 
-# abrir rotas da OD agrupadas ---------------------------------------------
-od_weekday_peak_group_vias <-    st_read("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_peak.gpkg")
-od_weekday_offpeak_group_vias <- st_read("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_offpeak.gpkg")
-od_weekend_group_vias <-         st_read("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekend.gpkg")
+# # abrir rotas da OD agrupadas ---------------------------------------------
+# od_weekday_peak_group_vias <-    st_read("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_peak.gpkg")
+# od_weekday_offpeak_group_vias <- st_read("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekday_offpeak.gpkg")
+# od_weekend_group_vias <-         st_read("../../data/smtr_malha_cicloviaria/3.2-osm_trips/osm_trips_weekend.gpkg")
+od_group_vias <-         st_read("../../data/smtr_malha_cicloviaria/3.2-od_trechos/od_trechos.gpkg")
 
 
 
