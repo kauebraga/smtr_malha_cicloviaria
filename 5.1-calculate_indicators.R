@@ -77,34 +77,50 @@ hex_totals_regioes <- left_join(hex_totals_regioes, estacoes_totals_regioes, by 
 # mapview(estacoes)
 
 # buffer each cenario
-# cenario <- cenario1
-
+# cenario <- "cenario1"
 # cenario <- "cenario2" 
 
-calculate_buffer <- function(cenario) {
+calculate_buffer <- function(cenario, trechos = TRUE) {
   
   # cenario_buffer_old <- st_transform(cenario, crs = 31983)
   # cenario_buffer_old <- st_buffer(cenario_buffer_old, dist = 300)
   # cenario_buffer_old <- st_transform(cenario_buffer_old, crs = 4326)
   
-  cenario_buffer <- readr::read_rds(  sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group.rds", cenario)) %>% st_sf()
+  if (trechos) {
+    
+    cenario_buffer <- readr::read_rds(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group.rds", cenario)) %>% st_sf()
+    
+    # qual a proporcao da area de cada hexagono que esta dentro de uma isocrona?
+    a <- st_intersection(cenario_buffer,
+                         hex) %>%
+      # calcular a area do pedaco
+      mutate(pedaco_area = st_area(.)) %>%
+      # calcular a proporcao da area total do hex que esta dentro da isocrona
+      mutate(area_prop_hex = as.numeric(pedaco_area) / as.numeric(hex_area))
+    
+    a1 <- a %>%
+      st_set_geometry(NULL) %>%
+      # group_by(sigla_muni, name, cenario, fase) %>%
+      group_by(sigla_muni, osm_id, name, cenario, fase) %>%
+      # multiplcar a area proporcional pela variavel do setor
+      # https://stackoverflow.com/questions/45947787/create-new-variables-with-mutate-at-while-keeping-the-original-ones/45947867#45947867
+      # summarise(across(starts_with(c("P00", "E00", "S00")), .fns = ~sum(.x * area_prop_hex, na.rm = TRUE)),
+      summarise(across(starts_with(c("pop_", "cor_", "empregos_total", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE))),
+                fase = first(fase)
+                # trips_sum = first(trips_sum)
+      )  %>%
+      # trazer geom
+      left_join(dplyr::select(cenario_buffer, osm_id), by = "osm_id")
+    
+  }
+  
+  
   cenario_buffer_raw <- readr::read_rds(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group_raw.rds", cenario)) %>%
     st_sf()
-  
-  # mapview(cenario_buffer %>% filter(osm_id == 116701312)) + 
-  #   cenario_buffer_old %>% filter(osm_id == 116701312)
   
   # combine isocronas
   cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer_raw)) %>% mutate(cenario = cenario)
   # mapview(cenario_buffer_combine)
-  
-  # qual a proporcao da area de cada hexagono que esta dentro de uma isocrona?
-  a <- st_intersection(cenario_buffer,
-                       hex) %>%
-    # calcular a area do pedaco
-    mutate(pedaco_area = st_area(.)) %>%
-    # calcular a proporcao da area total do hex que esta dentro da isocrona
-    mutate(area_prop_hex = as.numeric(pedaco_area) / as.numeric(hex_area))
   
   # para a malha como um todo
   a_combine <- st_intersection(cenario_buffer_combine,
@@ -115,20 +131,6 @@ calculate_buffer <- function(cenario) {
     mutate(area_prop_hex = as.numeric(pedaco_area) / as.numeric(hex_area))
   
   
-  
-  a1 <- a %>%
-    st_set_geometry(NULL) %>%
-    # group_by(sigla_muni, name, cenario, fase) %>%
-    group_by(sigla_muni, osm_id, name, cenario, fase) %>%
-    # multiplcar a area proporcional pela variavel do setor
-    # https://stackoverflow.com/questions/45947787/create-new-variables-with-mutate-at-while-keeping-the-original-ones/45947867#45947867
-    # summarise(across(starts_with(c("P00", "E00", "S00")), .fns = ~sum(.x * area_prop_hex, na.rm = TRUE)),
-    summarise(across(starts_with(c("pop_", "cor_", "empregos_total", "edu_", "saude_")), .fns = ~round(sum(.x * area_prop_hex, na.rm = TRUE))),
-              fase = first(fase)
-              # trips_sum = first(trips_sum)
-    )  %>%
-    # trazer geom
-    left_join(select(cenario, osm_id), by = "osm_id")
   
   a1_combine <- a_combine %>%
     st_set_geometry(NULL) %>%
@@ -247,13 +249,14 @@ calculate_buffer <- function(cenario) {
   #   filter(regioes, NOME_RP == "Madureira")+
   # cenario1
   
+  if (!trechos) a1 <- data.frame() else a1 
   
   return(list(buffer_cenario = a1, buffer_cenario_combine = a1_combine, buffer_cenario_combine_regioes = regioes_fim))
   
 }
 
-cenario1_socio <- calculate_buffer(cenario1)
-# cenario2_socio <- calculate_buffer(cenario2)
+cenario1_socio <- calculate_buffer("cenario1")
+cenario2_socio <- calculate_buffer("cenario2", trechos = FALSE)
 # cenario3_socio <- calculate_buffer(cenario3)
 
 
@@ -263,23 +266,33 @@ cenario1_socio <- calculate_buffer(cenario1)
 # cenario1_socio$buffer_cenario_combine_regioes %>% View()
 
 # juntar
-cenarios_socio <- list(cenario1_socio)
-# cenarios_socio <- list(cenario1_socio, cenario2_socio, cenario3_socio)
+cenarios_socio <- list(cenario1_socio, cenario2_socio)
 cenarios_socio <- purrr::transpose(cenarios_socio)
 cenarios_socio <- lapply(cenarios_socio, rbindlist)
 
 # save
+file.remove("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_trechos.gpkg")
+file.remove("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_city.csv")
+file.remove("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_regioes.gpkg")
+
 cenarios_socio[[1]] %>% 
   st_sf() %>%
   st_write("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_trechos.gpkg")
 
-# cenarios_socio[[2]] %>% 
-a1_combine %>%
-  fwrite(sprintf("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_%s_city.csv", cenario))
+cenarios_socio[[2]] %>%
+# a1_combine %>%
+  fwrite("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_city.csv")
+
+library(googlesheets4)
+ss <- "https://docs.google.com/spreadsheets/d/1alAUCWPliyF0F4Pj6y2UFHXbySwdKObUiMH4S9AsENk/edit#gid=0"
+write_sheet(ss = ss,
+            cenarios_socio[[2]],
+            sheet = "Indicadores"
+            )
 
 # cenarios_socio[[3]] %>%
 regioes_fim %>%
-  st_write(sprintf("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_%s_regioes.gpkg", cenario))
+  st_write("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_regioes.gpkg")
 
 
 

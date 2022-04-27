@@ -45,7 +45,8 @@ od_bike[, start_hour := hour(start_time)]
 od_bike[, weekday := lubridate::wday(dia)]
 od_bike[, day_type := fifelse(weekday %in% c(1, 2, 3, 4, 5), "semana", "final_de_semana")]
 # fazr pico - fora pco
-od_bike[, hour_type := fifelse(start_hour %in% c(6, 7, 8), "pico", "fora_pico")]
+od_bike[, hour_type := fifelse(start_hour %in% c(6, 7), "pico", 
+                               fifelse(start_hour %in% c(14, 15), "fora_pico", "vale"))]
 
 # agrupar OD por rota
 agrupar_od_por_rota <- function(od) {
@@ -183,6 +184,16 @@ write_sheet(data = viagens_estacao,
 
 ```{r viagens_par_od, cache = TRUE}
 
+# quantidade de viagens total
+od_total <- od_bike_group %>%
+  st_set_geometry(NULL) %>%
+  group_by(initial_station_name, final_station_name) %>%
+  summarise(trips_n = sum(trips_n)) %>%
+  ungroup() %>%
+  arrange(desc(trips_n))
+  
+  
+
 # quantidade de viagens diarias por pico-fora pico
 od_pico_semana <- od_bike_group %>% filter(day_type == "semana", hour_type == "pico") %>%
   arrange(desc(trips_n))
@@ -195,6 +206,7 @@ od_fpico_semana <- od_bike_group %>% filter(day_type == "semana", hour_type == "
 #   summarise(trips_n = sum(trips_n)) %>%
 #   arrange(desc(trips_n))
 
+
 st_write(od_pico_semana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_pico_semana.gpkg", append = FALSE)
 
 st_write(od_fpico_semana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_fpico_semana.gpkg", append = FALSE)
@@ -202,6 +214,9 @@ st_write(od_fpico_semana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/
 # st_write(od_fsemana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_fsemana.gpkg")
 
 # salvar uma amostra no googlesheets
+write_sheet(data = od_total %>% slice(1:100),
+            ss = ss,
+            sheet = "Viagens por OD - Total")
 write_sheet(data = od_pico_semana %>% st_set_geometry(NULL) %>% slice(1:100),
             ss = ss,
             sheet = "Viagens por OD - Pico semana")
