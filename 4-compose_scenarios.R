@@ -25,9 +25,9 @@ od_group_vias <- st_read("../../data/smtr_malha_cicloviaria/3.2-od_trechos/od_tr
 
 # fazer juncao
 cenario1 <- cenario1 %>% 
-  left_join(od_group_vias %>% select(osm_id, trips_total, trips_weekday_peak, trips_weekday_offpeak, trips_weekend) %>% st_set_geometry(NULL))
+  left_join(od_group_vias %>% select(osm_id, trips_total, trips_weekday_peak_morning, trips_weekday_peak_afternoon, trips_weekday_offpeak, trips_weekend) %>% st_set_geometry(NULL))
 cenario2 <- cenario2 %>% 
-  left_join(od_group_vias %>% select(osm_id, trips_total, trips_weekday_peak, trips_weekday_offpeak, trips_weekend) %>% st_set_geometry(NULL))
+  left_join(od_group_vias %>% select(osm_id, trips_total, trips_weekday_peak_morning, trips_weekday_peak_afternoon, trips_weekday_offpeak, trips_weekend) %>% st_set_geometry(NULL))
 summary(cenario2$trips_total)
 
 # trazer os trechos vazios

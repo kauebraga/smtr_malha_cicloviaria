@@ -45,8 +45,12 @@ od_bike[, start_hour := hour(start_time)]
 od_bike[, weekday := lubridate::wday(dia)]
 od_bike[, day_type := fifelse(weekday %in% c(1, 2, 3, 4, 5), "semana", "final_de_semana")]
 # fazr pico - fora pco
-od_bike[, hour_type := fifelse(start_hour %in% c(6, 7), "pico", 
-                               fifelse(start_hour %in% c(14, 15), "fora_pico", "vale"))]
+od_bike[, hour_type := fifelse(start_hour %in% c(6, 7), "pico_manha",
+                               fifelse(start_hour %in% c(16, 17), "pico_tarde",
+                                       fifelse(start_hour %in% c(14, 15), "fora_pico", "vale")))]
+
+# apagar viagens com menos de 2 minutos
+od_bike <- od_bike[duration >= 2]
 
 # agrupar OD por rota
 agrupar_od_por_rota <- function(od) {
@@ -69,7 +73,46 @@ agrupar_od_por_rota <- function(od) {
 
 od_bike_group <- agrupar_od_por_rota(od_bike)
 
+# identificar viagens de entregadores
+# para cada estacao, tambem considerar outras estacoes num raio de 300 metros
+estacoes <- od_bike[, .(lon = first(initial_station_longitude), lat = first(initial_station_latitude)),
+                       by = .(initial_station_name)]
+estacoes <- estacoes %>% st_as_sf(coords = c("lon", "lat"), crs = 4326)
+
+# salvar
+st_write(estacoes, "../../data/smtr_malha_cicloviaria/explore_od_tembici/estacoes_tembici.gpkg")
+
+identificar_estacoes_vizinhas <- function(estacao) {
+  # estacao <- "14 - Pereira da Silva"
+  
+  estacoes1 <- estacoes %>% filter(initial_station_name == estacao)
+  # distance to all other stations
+  estacoes_dist <- st_distance(estacoes1, estacoes) %>% as.numeric()
+  # input dist
+  estacoes_fim <- estacoes %>% 
+    mutate(estacao_from = estacoes1$initial_station_name) %>%
+    mutate(dist = estacoes_dist) %>%
+    # pegar somente menor que 200 metros
+    filter(dist <= 300) %>%
+    st_set_geometry(NULL) %>%
+    setDT()
+}
+
+estacoes_dist <- lapply(estacoes$initial_station_name, identificar_estacoes_vizinhas) %>%
+  rbindlist()
+
+# criar coluna unica
+estacoes_dist1 <- estacoes_dist[, .(vizinhos = paste0(initial_station_name, collapse = "|")), by = estacao_from ]
+
+# incorporar a matriz agrupada
+od_bike_group <- left_join(od_bike_group, estacoes_dist1, by = c("initial_station_name" = "estacao_from"))
+
+# criar coluna com identificacao se eh entregador ou nao
+od_bike_group <- od_bike_group %>% mutate(entregador = ifelse(stringr::str_detect(final_station_name, vizinhos), TRUE, FALSE)) 
+  
+
 ```
+
 
 ## Quantidade de viagens por dia
 
@@ -105,6 +148,10 @@ ggsave(plot = graph_trips_dia, filename = "figures/explore_od/1-graph_trips_dia.
 viagens_hora <- od_bike[, .(N = .N), by = .(start_hour, day_type)]
 setorder(viagens_hora, day_type, start_hour)
 
+# sumary
+a <- viagens_hora[day_type == "semana"]
+a %>% mutate(total = sum(N)) %>% group_by(start_hour) %>% mutate(perc = N / total)
+
 write_sheet(data = viagens_hora,
             ss = ss,
             sheet = "Viagens por hora")
@@ -129,13 +176,21 @@ ggsave(plot = graph_trips_hora, filename = "figures/explore_od/2-graph_trips_hor
 
 ```{r viagens_duracao}
 
-od_bike[, duracao_break := cut(duration, 
-                               breaks = c(0, 10, 20, 30, 40, 50, 60, 90, Inf),
-                               labels = c("0-10", "10-20", "20-30", "30-40", "40-50", "50-60", "60-90", "90+")
-                               )]
-trips_duracao <- od_bike[, .N, by = .(duracao_break, day_type)]
+# primeiro, excluir viagens com menos de 2 minutos, q podem ser problematicas
+od_bike1 <- od_bike[duration >= 2]
+
+od_bike1[, duracao_break := cut(duration, 
+                                breaks = c(0, 10, 20, 30, 40, 50, 60, 90, Inf),
+                                labels = c("0-10", "10-20", "20-30", "30-40", "40-50", "50-60", "60-90", "90+")
+)]
+trips_duracao <- od_bike1[, .N, by = .(duracao_break, day_type)]
+trips_duracao[, total := sum(N), by = day_type]
+trips_duracao[, perc := N/total]
 trips_duracao$day_type <- factor(trips_duracao$day_type, 
                                  levels = c("semana", "final_de_semana"))
+
+a <- trips_duracao %>% 
+  arrange(duracao_break, day_type)
 # setorder(viagens_hora, day_type, start_hour)
 
 # write_sheet(data = viagens_hora,
@@ -188,26 +243,36 @@ write_sheet(data = viagens_estacao,
 od_total <- od_bike_group %>%
   st_set_geometry(NULL) %>%
   group_by(initial_station_name, final_station_name) %>%
-  summarise(trips_n = sum(trips_n)) %>%
+  summarise(trips_n = sum(trips_n), entregador = first(entregador)) %>%
   ungroup() %>%
   arrange(desc(trips_n))
-  
-  
+
+
 
 # quantidade de viagens diarias por pico-fora pico
-od_pico_semana <- od_bike_group %>% filter(day_type == "semana", hour_type == "pico") %>%
+od_pico_manha_semana <- od_bike_group %>% filter(day_type == "semana", hour_type == "pico_manha") %>%
+  arrange(desc(trips_n))
+od_pico_tarde_semana <- od_bike_group %>% filter(day_type == "semana", hour_type == "pico_tarde") %>%
   arrange(desc(trips_n))
 # quantidade de viagens diarias por pico-fora pico
 od_fpico_semana <- od_bike_group %>% filter(day_type == "semana", hour_type == "fora_pico") %>%
   arrange(desc(trips_n))
 # quantidade de viagens diarias por final de semana
-# od_fsemana <- od_bike_group %>% filter(day_type == "final_de_semana") %>%
-#   group_by(initial_station_name, final_station_name, day_type) %>%
-#   summarise(trips_n = sum(trips_n)) %>%
-#   arrange(desc(trips_n))
+od_fsemana <- od_bike_group %>% filter(day_type == "final_de_semana") %>%
+  st_set_geometry(NULL) %>%
+  group_by(initial_station_name, final_station_name, day_type) %>%
+  summarise(trips_n = sum(trips_n)) %>%
+  arrange(desc(trips_n)) %>%
+  ungroup() %>%
+  left_join(od_bike_group %>% distinct(initial_station_name, final_station_name))
 
+file.remove("../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_pico_manha_semana.gpkg")
+file.remove("../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_pico_tarde_semana.gpkg")
+file.remove("../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_fpico_semana.gpkg")
 
-st_write(od_pico_semana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_pico_semana.gpkg", append = FALSE)
+st_write(od_pico_manha_semana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_pico_manha_semana.gpkg", append = FALSE)
+
+st_write(od_pico_tarde_semana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_pico_tarde_semana.gpkg", append = FALSE)
 
 st_write(od_fpico_semana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_fpico_semana.gpkg", append = FALSE)
 
@@ -217,9 +282,12 @@ st_write(od_fpico_semana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/
 write_sheet(data = od_total %>% slice(1:100),
             ss = ss,
             sheet = "Viagens por OD - Total")
-write_sheet(data = od_pico_semana %>% st_set_geometry(NULL) %>% slice(1:100),
+write_sheet(data = od_pico_manha_semana %>% st_set_geometry(NULL) %>% slice(1:100),
             ss = ss,
-            sheet = "Viagens por OD - Pico semana")
+            sheet = "Viagens por OD - Pico manhã semana")
+write_sheet(data = od_pico_tarde_semana %>% st_set_geometry(NULL) %>% slice(1:100),
+            ss = ss,
+            sheet = "Viagens por OD - Pico tarde semana")
 write_sheet(data = od_fpico_semana %>% st_set_geometry(NULL) %>% slice(1:100),
             ss = ss,
             sheet = "Viagens por OD - ForaPico semana")

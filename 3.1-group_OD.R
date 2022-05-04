@@ -32,7 +32,8 @@ od_bike_weekday <- od_bike[weekday %in% c(1, 2, 3, 4, 5)]
 od_bike_weekend <- od_bike[weekday %in% c(6, 7)]
 
 # fazr pico - fora pco
-od_bike_weekday_peak <- od_bike_weekday[start_hour %in% c(6, 7)]
+od_bike_weekday_peak_morning <- od_bike_weekday[start_hour %in% c(6, 7)]
+od_bike_weekday_peak_afternoon <- od_bike_weekday[start_hour %in% c(16, 17)]
 od_bike_weekday_offpeak <- od_bike_weekday[start_hour %in% c(14, 15)]
 
 # agrupar OD por rota
@@ -55,9 +56,12 @@ agrupar_od_por_rota <- function(od) {
 }
 
 od_group <- agrupar_od_por_rota(od_bike) %>% rename(trips_total = trips_n)
-od_weekday_peak_group <- agrupar_od_por_rota(od_bike_weekday_peak) %>% st_set_geometry(NULL) %>% 
+od_weekday_peak_morning_group <- agrupar_od_por_rota(od_bike_weekday_peak_morning) %>% st_set_geometry(NULL) %>% 
   select(-ttime_r5r, -dist) %>% 
-  rename(trips_weekday_peak = trips_n)
+  rename(trips_weekday_peak_morning = trips_n)
+od_weekday_peak_afternoon_group <- agrupar_od_por_rota(od_bike_weekday_peak_afternoon) %>% st_set_geometry(NULL) %>% 
+  select(-ttime_r5r, -dist) %>% 
+  rename(trips_weekday_peak_afternoon = trips_n)
 od_weekday_offpeak_group <- agrupar_od_por_rota(od_bike_weekday_offpeak) %>% st_set_geometry(NULL) %>% 
   select(-ttime_r5r, -dist) %>% 
   rename(trips_weekday_offpeak = trips_n)
@@ -66,16 +70,17 @@ od_weekend_group <- agrupar_od_por_rota(od_bike_weekend) %>% st_set_geometry(NUL
   rename(trips_weekend = trips_n)
 
 # seria muito interessante juntar todos em um so!
-od_group <- left_join(od_group, od_weekday_peak_group, by = c("initial_station_name", "final_station_name")) 
+od_group <- left_join(od_group, od_weekday_peak_morning_group, by = c("initial_station_name", "final_station_name")) 
+od_group <- left_join(od_group, od_weekday_peak_afternoon_group, by = c("initial_station_name", "final_station_name")) 
 od_group <- left_join(od_group, od_weekday_offpeak_group, by = c("initial_station_name", "final_station_name")) 
 od_group <- left_join(od_group, od_weekend_group, by = c("initial_station_name", "final_station_name")) 
 od_group <- od_group %>% select(initial_station_name, final_station_name,
-                                trips_total, trips_weekday_peak, trips_weekday_offpeak, trips_weekend,
+                                trips_total, trips_weekday_peak_morning, trips_weekday_peak_afternoon, trips_weekday_offpeak, trips_weekend,
                                 ttime_r5r, dist)
 
 
-file.remove("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group.gpkg")
-st_write(od_group, "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group.gpkg")
+file.remove("../../data/smtr_malha_cicloviaria/3.1-od_group/trips_group.gpkg")
+st_write(od_group, "../../data/smtr_malha_cicloviaria/3.1-od_group/trips_group.gpkg")
 
 
 b <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group.gpkg")

@@ -27,13 +27,18 @@ cenario2_raw <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_plan
 cenario2_raw <- cenario2_raw %>% filter(!st_is_empty(.))
 cenario2_raw <- st_make_valid(cenario2_raw)
 
+cenario3 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario3_trechos.gpkg") %>% 
+  mutate(cenario = "cenario3")
+
 
 # cenario_raw <- cenario2_raw
+# cenario <- cenario3 
 
 calculate_iso_cenario <- function(cenario = NULL, cenario_raw = NULL) {
   
   # get cenario
   cenario_id <- unique(cenario_raw$cenario)
+  cenario_id <- unique(cenario$cenario)
   
   
   # break scenario in points every 20 meters
