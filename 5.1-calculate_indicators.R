@@ -14,9 +14,9 @@ mapviewOptions(fgb = FALSE)
 
 
 # open cenarios
-# cenario1 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario1_trechos.gpkg") %>% mutate(cenario = "cenario1")
+cenario1 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario1_trechos.gpkg") %>% mutate(cenario = "cenario1")
 cenario2 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario2_trechos.gpkg")  %>% mutate(cenario = "cenario2")
-# cenario3 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario3_trechos.gpkg")  %>% mutate(cenario = "cenario3")
+cenario3 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario3_trechos.gpkg")  %>% mutate(cenario = "cenario3")
 
 # mapview(cenario1) + cenario2
 # mapview(cenario2) + cenario3
@@ -79,6 +79,7 @@ hex_totals_regioes <- left_join(hex_totals_regioes, estacoes_totals_regioes, by 
 # buffer each cenario
 # cenario <- "cenario1"
 # cenario <- "cenario2" 
+# cenario <- "cenario3" 
 
 calculate_buffer <- function(cenario, trechos = TRUE) {
   
@@ -115,12 +116,33 @@ calculate_buffer <- function(cenario, trechos = TRUE) {
   }
   
   
-  cenario_buffer_raw <- readr::read_rds(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group_raw.rds", cenario)) %>%
-    st_sf()
   
-  # combine isocronas
-  cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer_raw)) %>% mutate(cenario = cenario)
-  # mapview(cenario_buffer_combine)
+  
+  if (cenario %in% c("cenario1", "cenario2")) {
+    
+    
+    cenario_buffer_raw <- readr::read_rds(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group_raw.rds", cenario)) %>%
+      st_sf()
+    
+    # combine isocronas
+    cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer_raw)) %>% mutate(cenario = cenario)
+    
+  } else {
+    
+    # p/ cenario 3
+    
+    cenario_buffer_raw <- readr::read_rds(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group_raw.rds", "cenario2")) %>%
+      st_sf() %>%
+      select(cenario)
+    
+    # pegar somente os vazios, q sao da fase 3
+    cenario_buffer_vazios <- cenario_buffer %>% filter(fase == "fase3") %>% select(cenario)
+    # juntar
+    cenario_buffer_combine <- rbind(cenario_buffer_raw, cenario_buffer_vazios)
+    # combine isocronas
+    cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer_combine)) %>% mutate(cenario = cenario)
+    
+  }
   
   # para a malha como um todo
   a_combine <- st_intersection(cenario_buffer_combine,
@@ -255,9 +277,9 @@ calculate_buffer <- function(cenario, trechos = TRUE) {
   
 }
 
-cenario1_socio <- calculate_buffer("cenario1")
-cenario2_socio <- calculate_buffer("cenario2", trechos = FALSE)
-# cenario3_socio <- calculate_buffer(cenario3)
+cenario1_socio <- calculate_buffer("cenario1", trechos = TRUE)
+cenario2_socio <- calculate_buffer("cenario2", trechos = TRUE)
+cenario3_socio <- calculate_buffer("cenario3", trechos = TRUE)
 
 
 # teste
@@ -266,7 +288,7 @@ cenario2_socio <- calculate_buffer("cenario2", trechos = FALSE)
 # cenario1_socio$buffer_cenario_combine_regioes %>% View()
 
 # juntar
-cenarios_socio <- list(cenario1_socio, cenario2_socio)
+cenarios_socio <- list(cenario1_socio, cenario2_socio, cenario3_socio)
 cenarios_socio <- purrr::transpose(cenarios_socio)
 cenarios_socio <- lapply(cenarios_socio, rbindlist)
 
@@ -276,19 +298,26 @@ file.remove("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_ci
 file.remove("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_regioes.gpkg")
 
 cenarios_socio[[1]] %>% 
-  st_sf() %>%
+  st_sf(crs = 4326) %>%
   st_write("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_trechos.gpkg")
 
 cenarios_socio[[2]] %>%
-# a1_combine %>%
+  # a1_combine %>%
   fwrite("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_city.csv")
+
+cenarios_socio[[3]] %>%
+  # a1_combine %>%
+  select(-geometry) %>%
+  fwrite("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_regioes.csv")
+
+
 
 library(googlesheets4)
 ss <- "https://docs.google.com/spreadsheets/d/1alAUCWPliyF0F4Pj6y2UFHXbySwdKObUiMH4S9AsENk/edit#gid=0"
 write_sheet(ss = ss,
             cenarios_socio[[2]],
             sheet = "Indicadores"
-            )
+)
 
 # cenarios_socio[[3]] %>%
 regioes_fim %>%

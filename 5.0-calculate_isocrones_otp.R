@@ -14,7 +14,7 @@ cenario1_raw <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_atua
 # delete emty
 cenario1_raw <- cenario1_raw %>% filter(!st_is_empty(.))
 
-cenario2 <- st_read("../../data-raw/")
+cenario2 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario2_trechos.gpkg") %>% mutate(cenario = "cenario2")
 cenario2_raw <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_planejada/redefinal_Oficina_v1.geojson") %>%
   # create ID
   mutate(OBJECTID = 1:n(), cenario = "cenario2") %>%
@@ -32,6 +32,7 @@ cenario3 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenari
 
 
 # cenario_raw <- cenario2_raw
+# cenario <- cenario2
 # cenario <- cenario3 
 
 calculate_iso_cenario <- function(cenario = NULL, cenario_raw = NULL) {
@@ -94,7 +95,7 @@ calculate_iso_cenario <- function(cenario = NULL, cenario_raw = NULL) {
                   fromID = id,
                   cutoffSec = time,
                   mode = mode1,
-                  ncores = 3,
+                  ncores = 10,
                   routingOptions = routingOptions
     )
     
@@ -186,19 +187,20 @@ calculate_iso_cenario <- function(cenario = NULL, cenario_raw = NULL) {
   #   left_join(cenario_unique_raw, by = "OBJECTID")
   
   # finalizar
-  cenario1_iso <- cenario1 %>%
+  cenario_iso <- cenario %>%
     st_set_geometry(NULL) %>%
-    distinct(osm_id, name, fase, cenario, trips_sum) %>%
+    distinct(osm_id, name, fase, cenario, trips_total, trips_weekday_peak_morning, trips_weekday_peak_afternoon, trips_weekday_offpeak,trips_weekend ) %>%
     left_join(oi %>% select(-Group.1, -id), by = "osm_id")
-  cenario1_raw_iso <- cenario_raw %>%
+  cenario_raw_iso <- cenario_raw %>%
     st_set_geometry(NULL) %>%
     left_join(oi_raw %>% select(-Group.1, -id), by = "OBJECTID")
   
   
   # save
-  readr::write_rds(cenario1_iso,     sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group.rds", cenario_id))
-  readr::write_rds(cenario1_raw_iso, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group_raw.rds", cenario_id))
-  sf::st_write(cenario1_raw_iso %>% st_sf(), sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group_raw.gpkg", cenario_id))
+  readr::write_rds(cenario_iso,     sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group.rds", cenario_id))
+  st_write(cenario_iso,     sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group.gpkg", cenario_id))
+  readr::write_rds(cenario_raw_iso, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group_raw.rds", cenario_id))
+  sf::st_write(cenario_raw_iso %>% st_sf(), sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group_raw.gpkg", cenario_id))
   
 }
 
