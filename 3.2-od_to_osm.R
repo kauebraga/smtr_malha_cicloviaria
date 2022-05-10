@@ -72,7 +72,7 @@ intersecao_od_osm <- function(od) {
     st_sf(crs = 4326) %>%
     arrange(desc(trips_total))
   
-  mapview(osm_od_ok_group)
+  # mapview(osm_od_ok_group)
   
   # # por via
   # osm_od_ok_group_group <- osm_od_ok_group %>%
@@ -87,17 +87,18 @@ intersecao_od_osm <- function(od) {
   
 }
 
-# od_weekday_peak_group_vias <- intersecao_od_osm(od_weekday_peak_group)
-# od_weekday_offpeak_group_vias <- intersecao_od_osm(od_weekday_offpeak_group)
-# od_weekend_group_vias <- intersecao_od_osm(od_weekend_group)
-
 od_group_vias <- intersecao_od_osm(od_group)
 
 
 # a <- st_read("../../../../Downloads/osm_trips_weekday_peak.gpkg")
+file_path <- "../../data/smtr_malha_cicloviaria/3.2-od_trechos/od_trechos.gpkg" 
+file.remove(file_path)
+st_write(od_group_vias, file_path, append = FALSE)
 
-file.remove("../../data/smtr_malha_cicloviaria/3.2-od_trechos/od_trechos.gpkg")
-st_write(od_group_vias, "../../data/smtr_malha_cicloviaria/3.2-od_trechos/od_trechos.gpkg", append = FALSE)
 
 
-
+# update on drive folder
+googledrive::drive_ls(path = "SRTM - Infraestrutura cicloviaria")
+googledrive::drive_put(media = file_path,
+                       path = "SRTM - Infraestrutura cicloviaria/3.2-od_trechos",
+                       name = basename(file_path))

@@ -6,6 +6,7 @@ library(sf)
 library(purrr)
 library(mapview)
 mapviewOptions(fgb = FALSE)
+sf::sf_use_s2(FALSE)
 
 # open scenario
 cenario1 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario1_trechos.gpkg") %>% mutate(cenario = "cenario1")
@@ -21,8 +22,8 @@ cenario2_raw <- st_read("../../data-raw/smtr_malha_cicloviaria/bike_network_plan
   # create fase
   mutate(fase = ifelse(status == "existente", "fase1", "fase2")) %>%
   select(OBJECTID,cenario,  fase, Rota = Trecho)
-  # convert to linestring
-  # st_cast("LINESTRING")
+# convert to linestring
+# st_cast("LINESTRING")
 # delete emty
 cenario2_raw <- cenario2_raw %>% filter(!st_is_empty(.))
 cenario2_raw <- st_make_valid(cenario2_raw)
@@ -206,3 +207,59 @@ calculate_iso_cenario <- function(cenario = NULL, cenario_raw = NULL) {
 
 # mapview(cenario1) + cenario1_raw
 
+
+# build buffer --------------------------------------------------------------------------------
+
+# cenario <- "cenario3"
+
+build_buffer_combine <- function(cenario) {
+  
+  
+  
+  
+  if (cenario %in% c("cenario1", "cenario2")) {
+    
+    
+    cenario_buffer_raw <- readr::read_rds(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group_raw.rds", cenario)) %>%
+      st_sf()
+    
+    # combine isocronas
+    cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer_raw)) %>% mutate(cenario = cenario)
+    
+  } else {
+    
+    # p/ cenario 3
+    cenario_buffer <- readr::read_rds(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group.rds", cenario)) %>% st_sf()
+    
+    cenario_buffer_raw <- readr::read_rds(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group_raw.rds", "cenario2")) %>%
+      st_sf() %>%
+      select(cenario)
+    
+    # pegar somente os vazios, q sao da fase 3
+    cenario_buffer_vazios <- cenario_buffer %>% filter(fase == "fase3") %>% select(cenario)
+    # juntar
+    cenario_buffer_combine <- rbind(cenario_buffer_raw, cenario_buffer_vazios)
+    # combine isocronas
+    cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer_combine)) %>% mutate(cenario = cenario)
+    
+  }
+  
+  file <- sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_%s_combine.gpkg", cenario)
+  file.remove(file)
+  # export combine
+  st_write(cenario_buffer_combine, file)
+  
+}
+
+
+purrr::walk(c("cenario1", "cenario2", "cenario3"), build_buffer_combine)
+
+googledrive::drive_put(media = "../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_cenario1_combine.gpkg",
+                       path = "SRTM - Infraestrutura cicloviaria/5.0-isocronas",
+                       name = "iso_cenario1_combine.gpkg")
+googledrive::drive_put(media = "../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_cenario2_combine.gpkg",
+                       path = "SRTM - Infraestrutura cicloviaria/5.0-isocronas",
+                       name = "iso_cenario2_combine.gpkg")
+googledrive::drive_put(media = "../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_cenario3_combine.gpkg",
+                       path = "SRTM - Infraestrutura cicloviaria/5.0-isocronas",
+                       name = "iso_cenario3_combine.gpkg")

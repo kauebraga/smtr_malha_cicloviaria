@@ -45,11 +45,8 @@ origins_dest_unique[od_bike, on = c("id" = "final_station_name"),
 
 # check locations
 origins_dest_unique_sf <- origins_dest_unique %>% st_as_sf(coords = c("lon", "lat"), crs = 4326)
-mapview(origins_dest_unique_sf, legend = FALSE)
+# mapview(origins_dest_unique_sf, legend = FALSE)
 
-leaflet() %>%
-  addTiles() %>%
-  addMarkers(data = origins_dest_unique_sf, popup = ~htmltools::htmlEscape(id) )
 
 
 
@@ -63,22 +60,29 @@ coords_matrix_origin <- left_join(select(od_combinations, Var1), origins_dest_un
 coords_matrix_dest <- left_join(select(od_combinations, Var2), origins_dest_unique, by = c("Var2" = "id")) %>% rename(id = Var2)
 
 # calculate detailed ttmatrix
-ttm1_detailed <- detailed_itineraries(r5r_core = r5r_core,
-                                      origins = coords_matrix_origin,
-                                      destinations = coords_matrix_dest,
-                                      mode = "BICYCLE",
-                                      max_trip_duration = 120)
-# ttm1_detailed <- detailed_itineraries(r5r_core = r5r_core,
-#                                       origins = filter(coords_matrix_origin, id == "232 - Parque Madureira I"),
-#                                       destinations = coords_matrix_origin %>% slice(1:309),
-#                                       mode = "BICYCLE",
-#                                       max_trip_duration = 150,
-#                                       max_lts = 4)
+ttmatrix_bike <- function(lts) {
+  
+  ttm1_detailed <- detailed_itineraries(r5r_core = r5r_core,
+                                        origins = coords_matrix_origin,
+                                        destinations = coords_matrix_dest,
+                                        mode = "BICYCLE",
+                                        max_trip_duration = 120,
+                                        max_lts = lts)
+  
+  # save
+  ttm1_detailed <- ttm1_detailed %>% select(-option, -segment, -segment_duration, -wait, -route, -mode)
+  readr::write_rds(ttm1_detailed, 
+                   sprintf("../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_detailed_rio_bike_lts%s.rds", lts))
+  
+}
 
-# save
-readr::write_rds(ttm1_detailed, "../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_detailed_rio_bike.rds")
-ttm1_detailed <- readr::read_rds("../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_detailed_rio_bike.rds")
+ttmatrix_bike(lts = 2)
+ttmatrix_bike(lts = 3)
 
-# for output
-ttm1_detailed %>% select(-option, -segment, -segment_duration, -wait, -route) %>%
-  st_write("../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_od.gpkg")
+# upload to drive
+googledrive::drive_put(media = "../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_detailed_rio_bike_lts2.rds",
+                       path = "SRTM - Infraestrutura cicloviaria/1-ttmatrix_od",
+                       name = "ttmatrix_detailed_rio_bike_lts2.rds")
+googledrive::drive_put(media = "../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_detailed_rio_bike_lts3.rds",
+                       path = "SRTM - Infraestrutura cicloviaria/1-ttmatrix_od",
+                       name = "ttmatrix_detailed_rio_bike_lts3.rds")

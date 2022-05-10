@@ -81,7 +81,7 @@ hex_totals_regioes <- left_join(hex_totals_regioes, estacoes_totals_regioes, by 
 # cenario <- "cenario2" 
 # cenario <- "cenario3" 
 
-calculate_buffer <- function(cenario, trechos = TRUE) {
+calculate_indicators <- function(cenario, trechos = TRUE) {
   
   # cenario_buffer_old <- st_transform(cenario, crs = 31983)
   # cenario_buffer_old <- st_buffer(cenario_buffer_old, dist = 300)
@@ -117,32 +117,8 @@ calculate_buffer <- function(cenario, trechos = TRUE) {
   
   
   
-  
-  if (cenario %in% c("cenario1", "cenario2")) {
-    
-    
-    cenario_buffer_raw <- readr::read_rds(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group_raw.rds", cenario)) %>%
-      st_sf()
-    
-    # combine isocronas
-    cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer_raw)) %>% mutate(cenario = cenario)
-    
-  } else {
-    
-    # p/ cenario 3
-    
-    cenario_buffer_raw <- readr::read_rds(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_group_raw.rds", "cenario2")) %>%
-      st_sf() %>%
-      select(cenario)
-    
-    # pegar somente os vazios, q sao da fase 3
-    cenario_buffer_vazios <- cenario_buffer %>% filter(fase == "fase3") %>% select(cenario)
-    # juntar
-    cenario_buffer_combine <- rbind(cenario_buffer_raw, cenario_buffer_vazios)
-    # combine isocronas
-    cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer_combine)) %>% mutate(cenario = cenario)
-    
-  }
+  # open buffer comibe to claculate indicator for the whole city and regions
+  cenario_buffer_combine <- st_read(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_%s_combine.gpkg", cenario))
   
   # para a malha como um todo
   a_combine <- st_intersection(cenario_buffer_combine,
@@ -277,9 +253,9 @@ calculate_buffer <- function(cenario, trechos = TRUE) {
   
 }
 
-cenario1_socio <- calculate_buffer("cenario1", trechos = TRUE)
-cenario2_socio <- calculate_buffer("cenario2", trechos = TRUE)
-cenario3_socio <- calculate_buffer("cenario3", trechos = TRUE)
+cenario1_socio <- calculate_indicators("cenario1", trechos = TRUE)
+cenario2_socio <- calculate_indicators("cenario2", trechos = TRUE)
+cenario3_socio <- calculate_indicators("cenario3", trechos = TRUE)
 
 
 # teste
@@ -293,13 +269,14 @@ cenarios_socio <- purrr::transpose(cenarios_socio)
 cenarios_socio <- lapply(cenarios_socio, rbindlist)
 
 # save
-file.remove("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_trechos.gpkg")
+file.remove("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_trechos.geojson")
 file.remove("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_city.csv")
 file.remove("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_regioes.gpkg")
 
 cenarios_socio[[1]] %>% 
   st_sf(crs = 4326) %>%
-  st_write("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_trechos.gpkg")
+  st_cast("MULTIPOLYGON") %>%
+  st_write("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_trechos.geojson")
 
 cenarios_socio[[2]] %>%
   # a1_combine %>%
@@ -311,12 +288,28 @@ cenarios_socio[[3]] %>%
   fwrite("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_regioes.csv")
 
 
+googledrive::drive_put(media = "../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_trechos.geojson",
+                       path = "SRTM - Infraestrutura cicloviaria/5.1-indicators",
+                       name = "bike_indicators_trechos.geojson")
+googledrive::drive_put(media = "../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_city.csv",
+                       path = "SRTM - Infraestrutura cicloviaria/5.1-indicators",
+                       name = "bike_indicators_city.csv")
+googledrive::drive_put(media = "../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_regioes.csv",
+                       path = "SRTM - Infraestrutura cicloviaria/5.1-indicators",
+                       name = "bike_indicators_regioes.csv")
+
+
+
 
 library(googlesheets4)
 ss <- "https://docs.google.com/spreadsheets/d/1alAUCWPliyF0F4Pj6y2UFHXbySwdKObUiMH4S9AsENk/edit#gid=0"
 write_sheet(ss = ss,
             cenarios_socio[[2]],
-            sheet = "Indicadores"
+            sheet = "Indicadores - cidade"
+)
+write_sheet(ss = ss,
+            cenarios_socio[[3]] %>% select(-geometry),
+            sheet = "Indicadores - regioes"
 )
 
 # cenarios_socio[[3]] %>%

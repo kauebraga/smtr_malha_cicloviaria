@@ -19,9 +19,12 @@ sf::sf_use_s2(FALSE)
 
 
 # open ttmatrix
-ttmatrix <- readr::read_rds("../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_detailed_rio_bike.rds")
-ttmatrix <- ttmatrix %>% select(initial_station_name = fromId, final_station_name = toId, ttime_r5r = total_duration,
+# ttmatrix <- readr::read_rds("../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_detailed_rio_bike.rds")
+ttmatrix <- readr::read_rds("../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_detailed_rio_bike_lts3.rds")
+ttmatrix <- ttmatrix %>% select(initial_station_name = from_id, final_station_name = to_id, ttime_r5r = total_duration,
                                 dist = distance)
+# a <- ttmatrix %>% filter(initial_station_name == "1 - Central do Brasil", final_station_name == "205 - Praça Barão de Ladário")
+# mapview(a)
 # open OD
 od_bike <- fread("../../data-raw/smtr_malha_cicloviaria/bike_trips/trips_BikeRio_20210901.csv")
 # separar entre semana e final de semana
@@ -44,7 +47,7 @@ agrupar_od_por_rota <- function(od) {
     # get unique OD
     filter(initial_station_name != final_station_name) %>%
     group_by(initial_station_name, final_station_name) %>%
-    summarise(trips_n = n()) %>%
+    summarise(trips_n = n(), duration_mean = mean(duration_seconds) / 60) %>%
     # , ttime_bike = mean(ttime)) %>% 
     ungroup() %>%
     # deletar origem = destino
@@ -76,22 +79,14 @@ od_group <- left_join(od_group, od_weekday_offpeak_group, by = c("initial_statio
 od_group <- left_join(od_group, od_weekend_group, by = c("initial_station_name", "final_station_name")) 
 od_group <- od_group %>% select(initial_station_name, final_station_name,
                                 trips_total, trips_weekday_peak_morning, trips_weekday_peak_afternoon, trips_weekday_offpeak, trips_weekend,
-                                ttime_r5r, dist)
+                                ttime_od = duration_mean, ttime_r5r, dist)
 
 
 file.remove("../../data/smtr_malha_cicloviaria/3.1-od_group/trips_group.gpkg")
 st_write(od_group, "../../data/smtr_malha_cicloviaria/3.1-od_group/trips_group.gpkg")
 
-
-b <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group.gpkg")
-c <- st_read("../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_peak.gpkg")
-
-
-# fwrite(od_group %>% st_set_geometry(NULL),    "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group.csv")
-# fwrite(od_weekday_peak_group %>% st_set_geometry(NULL),    "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_peak.csv")
-# fwrite(od_weekday_offpeak_group %>% st_set_geometry(NULL), "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_offpeak.csv")
-# fwrite(od_weekend_group %>% st_set_geometry(NULL),         "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekend.csv")
-# 
-# st_write(od_group,                 "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group.gpkg")
-# st_write(od_weekday_peak_group,    "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_peak.gpkg", append = FALSE)
-# st_write(od_weekday_offpeak_group, "../../data/smtr_malha_cicloviaria/3.1-trips_group/trips_group_weekdays_offpeak.gpkg", append = FALSE)
+# update on drive folder
+googledrive::drive_ls(path = "SRTM - Infraestrutura cicloviaria")
+googledrive::drive_put(media = "../../data/smtr_malha_cicloviaria/3.1-od_group/trips_group.gpkg",
+                       path = "SRTM - Infraestrutura cicloviaria/3.1-od_group",
+                       name = "trips_group.gpkg")

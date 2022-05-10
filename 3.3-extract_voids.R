@@ -30,22 +30,15 @@ osm_vazios <- od_group_vias %>% filter(osm_id %nin% osm_bike_planejada$osm_id)
 # mapview(osm_vazios) + osm_bike_planejada
 
 # salvar
-file.remove("../../data/smtr_malha_cicloviaria/3.3-vazios_trechos/od_vazios_trechos.gpkg")
-st_write(osm_vazios, "../../data/smtr_malha_cicloviaria/3.3-vazios_trechos/od_vazios_trechos.gpkg")
+file_path <- "../../data/smtr_malha_cicloviaria/3.3-vazios_trechos/od_vazios_trechos.gpkg"
+file.remove(file_path)
+st_write(osm_vazios, file_path)
 
-
-# file.remove("../../data/smtr_malha_cicloviaria/3.3-osm_vazios/osm_vazios_planejada_weekday_peak.gpkg")
-# file.remove("../../data/smtr_malha_cicloviaria/3.3-osm_vazios/osm_vazios_planejada_weekday_offpeak.gpkg")
-# file.remove("../../data/smtr_malha_cicloviaria/3.3-osm_vazios/osm_vazios_planejada_weekend.gpkg")
-# st_write(osm_vazios_weekday_peak, 
-#          "../../data/smtr_malha_cicloviaria/3.3-osm_vazios/osm_vazios_planejada_weekday_peak.gpkg",
-#          append = FALSE)
-# st_write(osm_vazios_weekday_offpeak, 
-#          "../../data/smtr_malha_cicloviaria/3.3-osm_vazios/osm_vazios_planejada_weekday_offpeak.gpkg",
-#          append = FALSE)
-# st_write(osm_vazios_weekend, 
-#          "../../data/smtr_malha_cicloviaria/3.3-osm_vazios/osm_vazios_planejada_weekend.gpkg",
-#          append = FALSE)
+# update on drive folder
+googledrive::drive_ls(path = "SRTM - Infraestrutura cicloviaria")
+googledrive::drive_put(media = file_path,
+                       path = "SRTM - Infraestrutura cicloviaria/3.3-vazios_trechos",
+                       name = basename(file_path))
 
 
 

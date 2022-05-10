@@ -41,13 +41,27 @@ cenario3 <- rbind(cenario2, osm_bike_vazios)
 # mapview(cenario1)
 # mapview(cenario2)
 # mapview(cenario3)
+file1 <- "../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario1_trechos.gpkg"
+file2 <- "../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario2_trechos.gpkg"
+file3 <- "../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario3_trechos.gpkg"
 
-file.remove("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario1_trechos.gpkg")
-file.remove("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario2_trechos.gpkg")
-file.remove("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario3_trechos.gpkg")
+file.remove(file1)
+file.remove(file2)
+file.remove(file3)
 
 # salvar
-st_write(cenario1, "../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario1_trechos.gpkg", append = FALSE)
-st_write(cenario2, "../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario2_trechos.gpkg", append = FALSE)
-st_write(cenario3, "../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario3_trechos.gpkg", append = FALSE)
+st_write(cenario1, file1, append = FALSE)
+st_write(cenario2, file2, append = FALSE)
+st_write(cenario3, file3, append = FALSE)
 
+googledrive::drive_put(media = file1,
+                       path = "SRTM - Infraestrutura cicloviaria/4-cenarios_trechos",
+                       name = basename(file1))
+
+googledrive::drive_put(media = file2,
+                       path = "SRTM - Infraestrutura cicloviaria/4-cenarios_trechos",
+                       name = basename(file2))
+
+googledrive::drive_put(media = file3,
+                       path = "SRTM - Infraestrutura cicloviaria/4-cenarios_trechos",
+                       name = basename(file3))
