@@ -5,8 +5,9 @@ library(data.table)
 library(sf)
 library(purrr)
 library(mapview)
+library(mapboxapi)
 mapviewOptions(fgb = FALSE)
-sf::sf_use_s2(FALSE)
+# sf::sf_use_s2(FALSE)
 
 # open scenario
 cenario1 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenario1_trechos.gpkg") %>% mutate(cenario = "cenario1")
@@ -33,103 +34,59 @@ cenario3 <- st_read("../../data/smtr_malha_cicloviaria/4-cenarios_trechos/cenari
 
 
 # cenario_raw <- cenario2_raw
-# cenario <- cenario2
-# cenario <- cenario3 
 
 calculate_iso_cenario <- function(cenario = NULL, cenario_raw = NULL) {
   
   # get cenario
   cenario_id <- unique(cenario_raw$cenario)
-  cenario_id <- unique(cenario$cenario)
   
+  # Get samples at every 100 meters
+  cenario_raw_utm <- st_transform(cenario_raw, 3857) %>%
+    st_cast("LINESTRING")
+  cenario_raw_points <- st_line_sample(cenario_raw_utm, density = 1/100)
   
-  # break scenario in points every 20 meters
-  # standardize shape resolution - at least every 20 meters
-  cenario_points <- st_segmentize(cenario, dfMaxLength = 200)
-  # shapes_linhas_filter <- sfheaders::sf_cast(shapes_linhas_filter, "POINT")
-  # transform to lon lat - these points will be the origins
-  cenario_points_coords <- sfheaders::sf_to_df(cenario_points, fill = TRUE) %>% 
-    mutate(id = 1:n()) %>%
-    select(id, osm_id, name, highway, fase, cenario, lon = x, lat = y) %>%
-    setDT()
+  # Transform back to a sf data.frame
+  cenario_raw_points <- map(cenario_raw_points, function(x) data.frame(geometry = st_geometry(x))) %>%
+    map_df(as.data.frame) %>% st_sf() %>%
+    mutate(OBJECTID = cenario_raw_utm$OBJECTID, 
+           cenario = cenario_raw_utm$cenario,
+           fase = cenario_raw_utm$fase,
+           Rota = cenario_raw_utm$Rota) %>%
+    st_cast("POINT") %>%
+    st_set_crs(3857) %>%
+    st_transform(4326) %>%
+    mutate(id = 1:n())
   
-  # group by each name and calculate consecutive distance between points
-  cenario_points_coords_teste <- 
+  # run iso
+  iso_mapbox1 <- mb_isochrone(cenario_raw_points[1:1000,],
+               profile = "walking",
+               distance = 300,
+               id_column = "id",
+               access_token = "pk.eyJ1Ijoia2F1ZWJyYWdhIiwiYSI6ImNqa2JoN3VodDMxa2YzcHFxMzM2YWw1bmYifQ.XAhHAgbe0LcDqKYyqKYIIQ")
+  iso_mapbox1 <- iso_mapbox1 %>% left_join(cenario_raw_points %>% st_set_geometry(NULL), by = "id")
+  readr::write_rds(iso_mapbox1, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_raw_mapbox1.rds", cenario_id))
+  iso_mapbox2 <- mb_isochrone(cenario_raw_points[1001:2000,],
+               profile = "walking",
+               distance = 300,
+               id_column = "id",
+               access_token = "pk.eyJ1Ijoia2F1ZWJyYWdhIiwiYSI6ImNqa2JoN3VodDMxa2YzcHFxMzM2YWw1bmYifQ.XAhHAgbe0LcDqKYyqKYIIQ")
+  iso_mapbox2 <- iso_mapbox2 %>% left_join(cenario_raw_points %>% st_set_geometry(NULL), by = "id")
+  readr::write_rds(iso_mapbox2, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_raw_mapbox2.rds", cenario_id))
+  iso_mapbox3 <- mb_isochrone(cenario_raw_points[2001:7000,],
+               profile = "walking",
+               distance = 300,
+               id_column = "id",
+               access_token = "pk.eyJ1Ijoia2F1ZWJyYWdhIiwiYSI6ImNqa2JoN3VodDMxa2YzcHFxMzM2YWw1bmYifQ.XAhHAgbe0LcDqKYyqKYIIQ")
+  iso_mapbox3 <- iso_mapbox3 %>% left_join(cenario_raw_points %>% st_set_geometry(NULL), by = "id")
+  readr::write_rds(iso_mapbox3, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_raw_mapbox3.rds", cenario_id))
+  iso_mapbox4 <- mb_isochrone(cenario_raw_points[7001:nrow(cenario_raw_points),],
+               profile = "walking",
+               distance = 300,
+               id_column = "id",
+               access_token = "pk.eyJ1Ijoia2F1ZWJyYWdhIiwiYSI6ImNqa2JoN3VodDMxa2YzcHFxMzM2YWw1bmYifQ.XAhHAgbe0LcDqKYyqKYIIQ")
+  iso_mapbox4 <- iso_mapbox4 %>% left_join(cenario_raw_points %>% st_set_geometry(NULL), by = "id")
+  readr::write_rds(iso_mapbox4, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_raw_mapbox4.rds", cenario_id))
   
-  # break scenario in points every 20 meters
-  # standardize shape resolution - at least every 20 meters
-  cenario_raw_points <- st_segmentize(cenario_raw, dfMaxLength = 200)
-  # shapes_linhas_filter <- sfheaders::sf_cast(shapes_linhas_filter, "POINT")
-  # transform to lon lat - these points will be the origins
-  cenario_raw_points_coords <- sfheaders::sf_to_df(cenario_raw_points, fill = TRUE) %>% 
-    mutate(id = 1:n()) %>%
-    select(id, OBJECTID, fase, cenario, lon = x, lat = y) %>%
-    setDT()
-  
-  # build graph
-  otp_build_graph(otp = "otp/programs/otp-1.5.0-shaded.jar",
-                  dir = "otp", 
-                  router = "rio")
-  
-  # run this and wait until the message "INFO (GrizzlyServer.java:153) Grizzly server running." show up
-  # may take a few minutes for a big city
-  otp_setup(otp = "otp/programs/otp-1.5.0-shaded.jar", 
-            dir = "otp", 
-            router = "rio", 
-            memory = 8000,
-            port = 8080, wait = FALSE)
-  
-  # register the router
-  otp_rio <- otp_connect(router = "rio")
-  
-  coords_list <- purrr::map2(as.numeric(cenario_points_coords$lon), as.numeric(cenario_points_coords$lat), c)
-  coords_list <- matrix(c(cenario_points_coords$lon, cenario_points_coords$lat), ncol = 2)
-  
-  coords_raw_list <- purrr::map2(as.numeric(cenario_raw_points_coords$lon), as.numeric(cenario_raw_points_coords$lat), c)
-  coords_raw_list <- matrix(c(cenario_raw_points_coords$lon, cenario_raw_points_coords$lat), ncol = 2)
-  
-  routingOptions <- otp_routing_options()
-  routingOptions$walkSpeed <- 1
-  routingOptions <- otp_validate_routing_options(routingOptions)
-  
-  my_iso <- function(coords, id = NULL, time, mode1, connection) {
-    
-    otp_isochrone(otpcon = connection,
-                  fromPlace = coords,
-                  fromID = id,
-                  cutoffSec = time,
-                  mode = mode1,
-                  ncores = 10,
-                  routingOptions = routingOptions
-    )
-    
-  }
-  
-  
-  # # apply isochrones to list of coordinates
-  # a <- lapply(coords_list[1:100], purrr::possibly(my_iso, otherwise = "erro"),
-  #             id = cenario_points_coords$id,
-  #             time = c(300), # default walkspeed is 1.333 m/s, so time for 500 meters is 500/1.33 = 376 secs
-  #             mode1 = "WALK",
-  #             connection = otp_rio)
-  
-  
-  a <- my_iso(coords_list,
-              id = cenario_points_coords$id,
-              time = c(300), # default walkspeed is 1.333 m/s, so time for 500 meters is 500/1.33 = 376 secs
-              mode1 = "WALK",
-              connection = otp_rio)
-  
-  a_raw <- my_iso(coords_raw_list,
-                  id = cenario_raw_points_coords$id,
-                  time = c(300), # default walkspeed is 1.333 m/s, so time for 500 meters is 500/1.33 = 376 secs
-                  mode1 = "WALK",
-                  connection = otp_rio)
-  
-  readr::write_rds(a,     sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s.rds", cenario_id))
-  readr::write_rds(a_raw, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_%s_raw.rds", cenario_id))
-  # a <- readr::read_rds("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_cenario1.rds")
-  # a_raw <- readr::read_rds("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_otp_cenario1_raw.rds")
   
   # mapview(a) + a_raw
   
