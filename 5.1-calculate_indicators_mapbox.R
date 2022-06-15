@@ -47,6 +47,14 @@ estacoes <- st_transform(estacoes, 4326)
 estacoes <- estacoes %>%
   mutate(sigla_muni = "rio") %>%
   select(sigla_muni, Station = Nome)
+# trazer estacoes do VLT
+estacoes_vlt <- st_read("../../data-raw/smtr_malha_cicloviaria/VLT/VLT/Estações/VLT_Estações.shp")
+estacoes_vlt <- st_transform(estacoes_vlt, 4326)
+estacoes_vlt <- estacoes_vlt %>% select(Station = Nome) %>%
+  mutate(sigla_muni = "rio")
+
+estacoes <- rbind(estacoes, estacoes_vlt) %>%
+  mutate(station_id = 1:n())
 # estacoes <- st_read("../../data-raw/smtr_malha_cicloviaria/estacoes_capacidade_ITDP/estacoes_2019.shp") %>%
 #   filter(City == "Rio de Janeiro", Status == "Operational") %>%
 #   mutate(sigla_muni = "rio") %>%
@@ -78,6 +86,7 @@ calculate_indicators <- function(cenario, trechos = TRUE) {
   
   # open buffer comibe to claculate indicator for the whole city and regions
   cenario_buffer_combine <- st_read(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/combine/iso_combine_mapbox_%s.gpkg", cenario))
+  cenario_buffer_combine <- st_make_valid(cenario_buffer_combine)
   
   # para a malha como um todo
   a_combine <- st_intersection(cenario_buffer_combine,
@@ -212,9 +221,9 @@ calculate_indicators <- function(cenario, trechos = TRUE) {
   
 }
 
-cenario1_socio <- calculate_indicators("cenario1", trechos = TRUE)
-cenario2_socio <- calculate_indicators("cenario2", trechos = TRUE)
-cenario3_socio <- calculate_indicators("cenario3", trechos = TRUE)
+cenario1_socio <- calculate_indicators("cenario1", trechos = FALSE)
+cenario2_socio <- calculate_indicators("cenario2", trechos = FALSE)
+cenario3_socio <- calculate_indicators("cenario3", trechos = FALSE)
 
 
 # teste
@@ -226,6 +235,18 @@ cenario3_socio <- calculate_indicators("cenario3", trechos = TRUE)
 cenarios_socio <- list(cenario1_socio, cenario2_socio, cenario3_socio)
 cenarios_socio <- purrr::transpose(cenarios_socio)
 cenarios_socio <- lapply(cenarios_socio, rbindlist)
+
+
+library(googlesheets4)
+ss <- "https://docs.google.com/spreadsheets/d/1alAUCWPliyF0F4Pj6y2UFHXbySwdKObUiMH4S9AsENk/edit#gid=0"
+write_sheet(ss = ss,
+            cenarios_socio[[2]],
+            sheet = "Indicadores - cidade (mapbox)"
+)
+write_sheet(ss = ss,
+            cenarios_socio[[3]] %>% select(-geometry),
+            sheet = "Indicadores - regioes (mapbox)"
+)
 
 # save
 file.remove("../../data/smtr_malha_cicloviaria/5.1-indicators/bike_indicators_trechos.geojson")
@@ -260,16 +281,6 @@ googledrive::drive_put(media = "../../data/smtr_malha_cicloviaria/5.1-indicators
 
 
 
-library(googlesheets4)
-ss <- "https://docs.google.com/spreadsheets/d/1alAUCWPliyF0F4Pj6y2UFHXbySwdKObUiMH4S9AsENk/edit#gid=0"
-write_sheet(ss = ss,
-            cenarios_socio[[2]],
-            sheet = "Indicadores - cidade"
-)
-write_sheet(ss = ss,
-            cenarios_socio[[3]] %>% select(-geometry),
-            sheet = "Indicadores - regioes"
-)
 
 # cenarios_socio[[3]] %>%
 regioes_fim %>%
