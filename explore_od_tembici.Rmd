@@ -32,8 +32,8 @@ Tratamento:
 ```{r tratamento, cache=TRUE}
 
 # open ttmatrix
-ttmatrix <- readr::read_rds("../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_detailed_rio_bike.rds")
-ttmatrix <- ttmatrix %>% select(initial_station_name = fromId, final_station_name = toId, 
+ttmatrix <- readr::read_rds("../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_detailed_rio_bike_lts3.rds")
+ttmatrix <- ttmatrix %>% select(initial_station_name = from_id, final_station_name = to_id, 
                                 # ttime_r5r = total_duration,
                                 dist = distance)
 # open OD
