@@ -93,32 +93,38 @@ sf::st_write(fase1_iso, "../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_map
 # para fase 2 -----------------------------------------------------
 
 
-fase2 <- st_read("../../data-raw/smtr_malha_cicloviaria/Plano Cicloviário_v1/Rede_Mínima_v1.shp",
-                 options = "ENCODING=WINDOWS-1252") %>%
+# foi feita uma atualizao da rewde q envolveu a exclusao e inclusao de nova rede
+fase2 <- st_read("../../data-raw/smtr_malha_cicloviaria/Rede_Futura_20220620/Rede_Futura_20220620.shp",
+                      options = "ENCODING=WINDOWS-1252") %>%
+  filter(Rede.MÃ.ni == "Sim") %>%
   # add variables
   mutate(OBJECTID = fid) %>%
   mutate(fase = "fase2", Status = NA) %>%
-  select(OBJECTID, Rota = Trecho, fase, Status)
+  select(OBJECTID, Rota = Trecho, fase, Status) %>%
+  st_zm(.)
 
+# function to prepare to calculate the iscochrones
+prepare_iso <- function(obj) {
+  
+  # Get samples at every 100 meters
+  fase2_utm <- st_transform(obj, 3857) %>%
+    st_cast("LINESTRING")
+  fase2_utm_points <- st_line_sample(fase2_utm, density = 1/150)
+  
+  # Transform back to a sf data.frame
+  fase2_points <- map(fase2_utm_points, function(x) data.frame(geometry = st_geometry(x))) %>%
+    map_df(as.data.frame) %>% st_sf() %>%
+    mutate(OBJECTID = fase2_utm$OBJECTID, 
+           fase = fase2_utm$fase,
+           Rota = fase2_utm$Rota) %>%
+    st_cast("POINT") %>%
+    st_set_crs(3857) %>%
+    st_transform(4326) %>%
+    mutate(id = 1:n())
+  
+}
 
-# remove z coordinates
-fase2 <- st_zm(fase2)
-
-# Get samples at every 100 meters
-fase2_utm <- st_transform(fase2, 3857) %>%
-  st_cast("LINESTRING")
-fase2_utm_points <- st_line_sample(fase2_utm, density = 1/150)
-
-# Transform back to a sf data.frame
-fase2_points <- map(fase2_utm_points, function(x) data.frame(geometry = st_geometry(x))) %>%
-  map_df(as.data.frame) %>% st_sf() %>%
-  mutate(OBJECTID = fase2_utm$OBJECTID, 
-         fase = fase2_utm$fase,
-         Rota = fase2_utm$Rota) %>%
-  st_cast("POINT") %>%
-  st_set_crs(3857) %>%
-  st_transform(4326) %>%
-  mutate(id = 1:n())
+fase2_points <- prepare_iso(fase2_new)
 
 my_iso_mapbox <- function(df) {
   
@@ -134,19 +140,20 @@ my_iso_mapbox <- function(df) {
 
 # run iso
 iso_mapbox1 <- my_iso_mapbox(fase2_points[1:1000,])
-readr::write_rds(iso_mapbox1, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase2_raw1.rds"))
+readr::write_rds(iso_mapbox1, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase2_raw1_new.rds"))
 
 iso_mapbox2 <- my_iso_mapbox(fase2_points[1001:2000,])
-readr::write_rds(iso_mapbox2, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase2_raw2.rds"))
+readr::write_rds(iso_mapbox2, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase2_raw2_new.rds"))
 
 iso_mapbox3 <- my_iso_mapbox(fase2_points[2001:nrow(fase2_points),])
-readr::write_rds(iso_mapbox3, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase2_raw3.rds"))
+readr::write_rds(iso_mapbox3, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase2_raw3_new.rds"))
 
 
 # mapview(a) + a_raw
 # juntar tudo
-a <- lapply(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase2_%s.rds", c("raw1", "raw2", "raw3")),
+a <- lapply(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase2_%s_new.rds", c("raw1", "raw2", "raw3")),
             read_rds)
+
 # ajustar classe da geometria do objeto 1
 class(a[[1]]$geometry) <- c("sfc_GEOMETRY", "sfc")
 # juntar
@@ -171,34 +178,19 @@ sf::st_write(fase2_iso, "../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_map
 
 # para fase 3  -----------------------------------------------------------
 
-fase3 <- st_read("../../data-raw/smtr_malha_cicloviaria/Plano Cicloviário_v1/Rede_Futura_v1.shp",
+# foi feita uma atualizao da rewde q envolveu a exclusao e inclusao de nova rede
+fase3 <- st_read("../../data-raw/smtr_malha_cicloviaria/Rede_Futura_20220620/Rede_Futura_20220620.shp",
                  options = "ENCODING=WINDOWS-1252") %>%
-  # somente intervencoes novas
-  filter(fid %nin% fase2$OBJECTID) %>%
+  # somente rede planejada
+  filter(is.na(Rede.MÃ.ni)) %>%
   # add variables
   mutate(OBJECTID = fid) %>%
   mutate(fase = "fase3", Status = NA) %>%
-  select(OBJECTID, Rota = Trecho, fase, Status)
+  select(OBJECTID, Rota = Trecho, fase, Status) %>%
+  st_zm(.)
 
-
-# remove z coordinates
-fase3 <- st_zm(fase3)
-
-# Get samples at every 100 meters
-fase3_utm <- st_transform(fase3, 3857) %>%
-  st_cast("LINESTRING")
-fase3_utm_points <- st_line_sample(fase3_utm, density = 1/150)
-
-# Transform back to a sf data.frame
-fase3_points <- map(fase3_utm_points, function(x) data.frame(geometry = st_geometry(x))) %>%
-  map_df(as.data.frame) %>% st_sf() %>%
-  mutate(OBJECTID = fase3_utm$OBJECTID, 
-         fase = fase3_utm$fase,
-         Rota = fase3_utm$Rota) %>%
-  st_cast("POINT") %>%
-  st_set_crs(3857) %>%
-  st_transform(4326) %>%
-  mutate(id = 1:n())
+# prepare points
+fase3_points <- prepare_iso(fase3)
 
 my_iso_mapbox <- function(df) {
   
@@ -214,18 +206,18 @@ my_iso_mapbox <- function(df) {
 
 # run iso
 iso_mapbox1 <- my_iso_mapbox(fase3_points[1:1000,])
-readr::write_rds(iso_mapbox1, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase3_raw1.rds"))
+readr::write_rds(iso_mapbox1, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase3_raw1_new.rds"))
 
 iso_mapbox2 <- my_iso_mapbox(fase3_points[1001:2000,])
-readr::write_rds(iso_mapbox2, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase3_raw2.rds"))
+readr::write_rds(iso_mapbox2, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase3_raw2_new.rds"))
 
 iso_mapbox3 <- my_iso_mapbox(fase3_points[2001:nrow(fase3_points),])
-readr::write_rds(iso_mapbox3, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase3_raw3.rds"))
+readr::write_rds(iso_mapbox3, sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase3_raw3_new.rds"))
 
 
 # mapview(a) + a_raw
 # juntar tudo
-a <- lapply(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase3_%s.rds", c("raw1", "raw2", "raw3")),
+a <- lapply(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase3_%s_new.rds", c("raw1", "raw2", "raw3")),
             read_rds)
 # ajustar classe da geometria do objeto 2
 class(a[[1]]$geometry) <- c("sfc_GEOMETRY", "sfc")
@@ -261,21 +253,21 @@ build_buffer_combine <- function(cenario) {
   
   if (cenario == "cenario1") {
     
-  cenario_buffer_raw <- sf::st_read(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase1.gpkg"))
-  
+    cenario_buffer_raw <- sf::st_read(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase1.gpkg"))
+    
     
   } else if (cenario == "cenario2") {
     
-  cenario_buffer_raw <- rbind(sf::st_read(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase1.gpkg")),
-                              sf::st_read(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase2.gpkg")))
+    cenario_buffer_raw <- rbind(sf::st_read(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase1.gpkg")),
+                                sf::st_read(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase2.gpkg")))
     
     
   }else if (cenario == "cenario3") {
-  
-  cenario_buffer_raw <- rbind(sf::st_read(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase1.gpkg")),
-                              sf::st_read(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase2.gpkg")),
-                              sf::st_read(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase3.gpkg")))
-  
+    
+    cenario_buffer_raw <- rbind(sf::st_read(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase1.gpkg")),
+                                sf::st_read(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase2.gpkg")),
+                                sf::st_read(sprintf("../../data/smtr_malha_cicloviaria/5.0-isocronas/iso_mapbox_fase3.gpkg")))
+    
   }
   # combine isocronas
   cenario_buffer_combine <- st_sf(geom = st_union(cenario_buffer_raw)) %>% mutate(cenario = cenario)
