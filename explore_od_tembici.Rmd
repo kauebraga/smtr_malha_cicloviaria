@@ -32,8 +32,8 @@ Tratamento:
 ```{r tratamento, cache=TRUE}
 
 # open ttmatrix
-ttmatrix <- readr::read_rds("../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_detailed_rio_bike.rds")
-ttmatrix <- ttmatrix %>% select(initial_station_name = fromId, final_station_name = toId, 
+ttmatrix <- readr::read_rds("../../data/smtr_malha_cicloviaria/1-ttmatrix_od/ttmatrix_detailed_rio_bike_lts3.rds")
+ttmatrix <- ttmatrix %>% select(initial_station_name = from_id, final_station_name = to_id, 
                                 # ttime_r5r = total_duration,
                                 dist = distance)
 # open OD
@@ -390,10 +390,14 @@ estacoes <- geojsonsf::geojson_sf("../../data-raw/smtr_malha_cicloviaria/Estacoe
 estacoes <- st_zm(estacoes)
 estacoes <- st_set_crs(estacoes, 32723)
 estacoes <- st_transform(estacoes, 4326)
-estacoes <- estacoes %>%
-  mutate(station_id = 1:n()) %>%
-  select(station_id, Station = Nome)
+estacoes <- estacoes %>% select(Station = Nome)
+# trazer estacoes do VLT
+estacoes_vlt <- st_read("../../data-raw/smtr_malha_cicloviaria/VLT/VLT/Estações/VLT_Estações.shp")
+estacoes_vlt <- st_transform(estacoes_vlt, 4326)
+estacoes_vlt <- estacoes_vlt %>% select(Station = Nome)
 
+estacoes <- rbind(estacoes, estacoes_vlt) %>%
+  mutate(station_id = 1:n())
 
 # buffer das estacoes
 estacoes_buffer <- st_transform(estacoes, crs = 31983) %>%
@@ -434,7 +438,7 @@ st_write(estacoes_origem_transporte, "../../data/smtr_malha_cicloviaria/explore_
 
 ggplot()+
   geom_sf(data = rio_limits, fill = NA)+
-  geom_sf(data = estacoes_origem_transporte, aes(size = n, alpha = n))+
+  geom_sf(data = estacoes_origem_transporte, aes(size = n), alpha = 0.5)+
   labs(title = "Estacoes com viagens em sua área de influência") +
   theme_void()
 
