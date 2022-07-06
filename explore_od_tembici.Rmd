@@ -108,7 +108,8 @@ estacoes_dist1 <- estacoes_dist[, .(vizinhos = paste0(initial_station_name, coll
 od_bike_group <- left_join(od_bike_group, estacoes_dist1, by = c("initial_station_name" = "estacao_from"))
 
 # criar coluna com identificacao se eh entregador ou nao
-od_bike_group <- od_bike_group %>% mutate(entregador = ifelse(stringr::str_detect(final_station_name, vizinhos), TRUE, FALSE)) 
+od_bike_group <- od_bike_group %>%
+  mutate(entregador = ifelse(stringr::str_detect(final_station_name, vizinhos), TRUE, FALSE)) 
   
 
 ```
@@ -178,18 +179,27 @@ ggsave(plot = graph_trips_hora, filename = "figures/explore_od/2-graph_trips_hor
 
 # primeiro, excluir viagens com menos de 2 minutos, q podem ser problematicas
 od_bike1 <- od_bike[duration >= 2]
+# trazer entregador
+od_bike1 <- merge(od_bike1,
+                  od_bike_group %>% st_set_geometry(NULL) %>% distinct(initial_station_name, final_station_name, entregador),
+                  sort = FALSE,
+                  by = c("initial_station_name", "final_station_name"))
 
 od_bike1[, duracao_break := cut(duration, 
                                 breaks = c(0, 10, 20, 30, 40, 50, 60, 90, Inf),
                                 labels = c("0-10", "10-20", "20-30", "30-40", "40-50", "50-60", "60-90", "90+")
 )]
-trips_duracao <- od_bike1[, .N, by = .(duracao_break, day_type)]
-trips_duracao[, total := sum(N), by = day_type]
+trips_duracao <- od_bike1[, .N, by = .(duracao_break, day_type, entregador)]
+trips_duracao[, total := sum(N), by = .(day_type, entregador)]
 trips_duracao[, perc := N/total]
 trips_duracao$day_type <- factor(trips_duracao$day_type, 
                                  levels = c("semana", "final_de_semana"))
+trips_duracao$entregador <- factor(trips_duracao$entregador, 
+                                 levels = c(TRUE, FALSE),
+                                 labels = c("Entregador: SIM", "Entregador: NAO"))
 
 a <- trips_duracao %>% 
+  select(duracao_break, day_type, entregador, N) %>%
   arrange(duracao_break, day_type)
 # setorder(viagens_hora, day_type, start_hour)
 
@@ -199,7 +209,7 @@ write_sheet(data = a,
 
 graph_trips_duracao <- ggplot()+
   geom_col(data = trips_duracao, aes(x = as.factor(duracao_break), y = N)) +
-  facet_wrap(~day_type, scales = "free") +
+  facet_wrap(day_type ~entregador, scales = "free_y") +
   theme_bw()+
   theme(legend.position = "bottom")+
   labs(title = "Histograma da duração das viagens - Setembro/2021",
@@ -257,29 +267,31 @@ od_pico_tarde_semana <- od_bike_group %>% filter(day_type == "semana", hour_type
 # quantidade de viagens diarias por pico-fora pico
 od_fpico_semana <- od_bike_group %>% filter(day_type == "semana", hour_type == "fora_pico") %>%
   arrange(desc(trips_n))
+od_vale_semana <- od_bike_group %>% filter(day_type == "semana", hour_type == "vale") %>%
+  arrange(desc(trips_n))
 # quantidade de viagens diarias por final de semana
-od_fsemana <- od_bike_group %>% filter(day_type == "final_de_semana") %>%
-  st_set_geometry(NULL) %>%
-  group_by(initial_station_name, final_station_name, day_type) %>%
-  summarise(trips_n = sum(trips_n)) %>%
-  arrange(desc(trips_n)) %>%
-  ungroup() %>%
-  left_join(unique(od_bike_group_dt, by = c("initial_station_name", "final_station_name")) %>% 
-              select(initial_station_name, final_station_name, geometry)) %>%
-  st_sf()
+od_pico_manha_fsemana <- od_bike_group %>% filter(day_type == "final_de_semana", hour_type == "pico_manha") %>%
+  arrange(desc(trips_n))
+od_pico_tarde_fsemana <- od_bike_group %>% filter(day_type == "final_de_semana", hour_type == "pico_tarde") %>%
+  arrange(desc(trips_n))
+od_fpico_fsemana <- od_bike_group %>% filter(day_type == "final_de_semana", hour_type == "fora_pico") %>%
+  arrange(desc(trips_n))
+od_vale_fsemana <- od_bike_group %>% filter(day_type == "final_de_semana", hour_type == "vale") %>%
+  arrange(desc(trips_n))
 
 file.remove("../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_pico_manha_semana.gpkg")
 file.remove("../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_pico_tarde_semana.gpkg")
 file.remove("../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_fpico_semana.gpkg")
 
 st_write(od_pico_manha_semana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_pico_manha_semana.gpkg", append = FALSE)
-
 st_write(od_pico_tarde_semana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_pico_tarde_semana.gpkg", append = FALSE)
-
 st_write(od_fpico_semana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_fpico_semana.gpkg", append = FALSE)
+st_write(od_vale_semana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_vale_semana.gpkg", append = FALSE)
 
-st_write(od_fsemana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_fsemana.gpkg", append = FALSE)
-
+st_write(od_pico_manha_fsemana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_pico_manha_fsemana.gpkg", append = FALSE)
+st_write(od_pico_tarde_fsemana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_pico_tarde_fsemana.gpkg", append = FALSE)
+st_write(od_fpico_fsemana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_fpico_fsemana.gpkg", append = FALSE)
+st_write(od_vale_fsemana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_vale_fsemana.gpkg", append = FALSE)
 # st_write(od_fsemana, "../../data/smtr_malha_cicloviaria/explore_od_tembici/viagens_por_od/viagens_od_fsemana.gpkg")
 
 # salvar uma amostra no googlesheets
@@ -295,6 +307,15 @@ write_sheet(data = od_pico_tarde_semana %>% st_set_geometry(NULL) %>% slice(1:10
 write_sheet(data = od_fpico_semana %>% st_set_geometry(NULL) %>% slice(1:100),
             ss = ss,
             sheet = "Viagens por OD - ForaPico semana")
+write_sheet(data = od_pico_manha_fsemana %>% st_set_geometry(NULL) %>% slice(1:100),
+            ss = ss,
+            sheet = "Viagens por OD - Pico manhã fsemana")
+write_sheet(data = od_pico_tarde_fsemana %>% st_set_geometry(NULL) %>% slice(1:100),
+            ss = ss,
+            sheet = "Viagens por OD - Pico tarde fsemana")
+write_sheet(data = od_fpico_fsemana %>% st_set_geometry(NULL) %>% slice(1:100),
+            ss = ss,
+            sheet = "Viagens por OD - ForaPico fsemana")
 
 
 ggplot()+
@@ -351,6 +372,11 @@ ggplot()+
 #   geom_sf(data = od_bike_entregadores, aes(size = trips_n), alpha = 0.3)+
 #   labs(title = "Estacoes com origem = destino") +
 #   theme_void()
+
+od_bike_group %>% st_set_geometry(NULL) %>%
+  mutate(total_viagens = sum(trips_n)) %>%
+  group_by(entregador) %>%
+  summarise(total_entregador = sum(trips_n))
 
 od_bike_group_ent <- od_bike_group %>% st_set_geometry(NULL) %>%
   group_by(day_type, hour_type, entregador) %>%
